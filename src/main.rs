@@ -1,27 +1,50 @@
-use iced::{Element, Sandbox, Settings};
+use iced::widget::{button, column, text};
+use iced::{Alignment, Element, Sandbox, Settings};
 
 pub fn main() -> iced::Result {
-    Hello::run(Settings::default())
+    Counter::run(Settings::default())
 }
 
-struct Hello;
+struct Counter {
+    value: i32,
+}
 
-impl Sandbox for Hello {
-    type Message = ();
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    IncrementPressed,
+    DecrementPressed,
+}
 
-    fn new() -> Hello {
-        Hello
+impl Sandbox for Counter {
+    type Message = Message;
+
+    fn new() -> Self {
+        Self { value: 0 }
     }
 
     fn title(&self) -> String {
-        String::from("A cool application")
+        String::from("Counter - Iced")
     }
 
-    fn update(&mut self, _message: Self::Message) {
-        // This application has no interactions
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::IncrementPressed => {
+                self.value += 1;
+            }
+            Message::DecrementPressed => {
+                self.value -= 1;
+            }
+        }
     }
 
-    fn view(&self) -> Element<Self::Message> {
-        "Hello, world!".into()
+    fn view(&self) -> Element<Message> {
+        column![
+            button("Increment").on_press(Message::IncrementPressed),
+            text(self.value).size(50),
+            button("Decrement").on_press(Message::DecrementPressed)
+        ]
+            .padding(20)
+            .align_items(Alignment::Center)
+            .into()
     }
 }
