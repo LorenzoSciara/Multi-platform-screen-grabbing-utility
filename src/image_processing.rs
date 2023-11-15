@@ -1,4 +1,4 @@
-use image::{ImageBuffer, Rgba};
+use image::{ImageBuffer, ImageFormat, Rgba};
 use std::io::{self, ErrorKind};
 
 pub struct ImageProcessor;
@@ -14,9 +14,10 @@ impl ImageProcessor {
         width: u32,
         height: u32,
         file_path: &str,
+        format: ImageFormat
     ) -> io::Result<()> {
         let image = Self::create_image(raw_data, width, height)?;
-        image.save(file_path).map_err(|e| io::Error::new(ErrorKind::Other, e))
+        image.save_with_format(file_path, format).map_err(|e| io::Error::new(ErrorKind::Other, e))
     }
 
     fn create_image(raw_data: &[u8], width: u32, height: u32) -> io::Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
