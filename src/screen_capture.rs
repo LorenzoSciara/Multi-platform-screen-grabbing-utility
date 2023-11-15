@@ -12,7 +12,7 @@ pub struct ScreenCapturer {
 impl ScreenCapturer {
     pub fn new() -> io::Result<Self> {
         let display = Display::primary()?;
-        let mut capturer = Capturer::new(display)?;
+        let capturer = Capturer::new(display)?;
         let (width, height) = (capturer.width() as u32, capturer.height() as u32);
 
         Ok(ScreenCapturer { capturer, width, height })
