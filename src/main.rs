@@ -1,16 +1,18 @@
 mod screen_capture;
 mod image_processing;
+mod hotkeys;
 
 use screen_capture::ScreenCapturer;
 use image_processing::ImageProcessor;
-use std::io;
-use std::path::Path;
+use std::{io, path::Path, thread, time};
 use image::ImageFormat;
+use hotkeys::{HotkeyListener, HotkeyConfig};
+use rdev::Key;
 
 
 fn main() -> io::Result<()> {
 
-    //Codice da integrare nella gui
+/*    //Codice da integrare nella gui
     let mut capturer = ScreenCapturer::new()?;
     let (frame, width, height) = capturer.capture_screen()?;
 
@@ -41,5 +43,24 @@ fn main() -> io::Result<()> {
     let processor = ImageProcessor::new();
     processor.process_and_save_image(&frame, width, height, &final_path, format)?;
 
-    Ok(())
+    Ok(())*/
+
+    //implementazione hotkeys
+
+    let hotkey_config = HotkeyConfig::parse_hotkey("Shift", "Q")
+        .expect("Configurazione hotkey non valida");
+
+    let hotkey_listener = HotkeyListener::new();
+    hotkey_listener.start();
+
+    loop {
+        if let Some(pressed_keys) = hotkey_listener.listen() {
+            if pressed_keys.contains(&hotkey_config.modifier) && pressed_keys.contains(&hotkey_config.key) {
+                println!("Combinazione {:?} + {:?} premuta!", hotkey_config.modifier, hotkey_config.key);
+                // Implementa qui la tua logica per la combinazione di hotkey
+            }
+        }
+
+        thread::sleep(time::Duration::from_millis(100));
+    }
 }
