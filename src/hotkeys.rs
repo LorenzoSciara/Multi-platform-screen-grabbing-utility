@@ -1,9 +1,8 @@
-use rdev::{listen, Event, EventType, Key};
+use rdev::{listen, EventType, Key};
 use std::collections::HashSet;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::env;
 
 pub struct HotkeyListener {
     sender: Sender<HashSet<Key>>,
