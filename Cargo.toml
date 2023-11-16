@@ -13,4 +13,4 @@ image = "0.24.7"
 # Per l'interfaccia utente
 iced = "0.10.0"
 # Per la gestione dei tasti di scelta rapida
-hotkey-rs = "0.1.2"
+rdev = "0.5.3"
