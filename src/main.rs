@@ -14,18 +14,28 @@ fn main() -> io::Result<()> {
     let mut capturer = ScreenCapturer::new()?;
     let (frame, width, height) = capturer.capture_screen()?;
 
-    let base_file_path = "screenshot"; // Modifica per includere o escludere estensioni diverse
-
-    let (final_path, format) = match Path::new(base_file_path)
+    let file_path = "screenshot"; // Cambia l'estensione per .png, .gif, ecc.
+    //verifica che il formato sia giusto
+    let format = Path::new(file_path)
         .extension()
         .and_then(std::ffi::OsStr::to_str)
-        .map(|ext| ext.to_lowercase()) {
-        Some(ext) if ext == "jpg" || ext == "jpeg" => (format!("{}.jpg", base_file_path), ImageFormat::Jpeg),
-        Some(ext) if ext == "gif" => (format!("{}.gif", base_file_path), ImageFormat::Gif),
-        _ => {
-            eprintln!("Estensione file non riconosciuta o non supportata. Salvataggio in formato PNG.");
-            (format!("{}.png", base_file_path), ImageFormat::Png)
-        }
+        .map(|ext| match ext.to_lowercase().as_str() {
+            "jpg" | "jpeg" => ImageFormat::Jpeg,
+            "gif" => ImageFormat::Gif,
+            "png" => ImageFormat::Png,
+            _ => {
+                eprintln!("Formato file non supportato. Salvataggio in formato PNG.");
+                ImageFormat::Png
+            }
+        })
+        .unwrap_or_else(|| {
+            eprintln!("Nessuna estensione trovata. Salvataggio in formato PNG.");
+            ImageFormat::Png
+        });
+
+    let final_path = match format {
+        ImageFormat::Png => if !file_path.ends_with(".png") { format!("{}.png", file_path) } else { String::from(file_path) },
+        _ => String::from(file_path),
     };
 
     let processor = ImageProcessor::new();
