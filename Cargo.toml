@@ -6,5 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iced = { version = "0.10.0", features = ["canvas", "tokio", "debug"] }
-time = { version = "0.3.5", features = ["local-offset"] }
+iced = { version = "0.10.0", features = ["debug", "image", "advanced", "tokio"] }
+#time = { version = "0.3.5", features = ["local-offset"] }
+image = {version = "0.24.7", features = ["png"]}
+tracing-subscriber = "0.3.17"
+tokio = "1.32.0"
