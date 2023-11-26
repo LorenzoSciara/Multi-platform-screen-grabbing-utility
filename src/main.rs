@@ -1,11 +1,15 @@
-use iced::{Element, Sandbox, Settings, Alignment};
-use iced::widget::{button, row};
+use iced::{Element, Sandbox, Settings, Alignment, Length, alignment, theme};
+use iced::Background::Color;
+use iced::widget::{button, row, text, column, image, Image};
 
 pub fn main() -> iced::Result {
     Screenshot::run(Settings::default())
 }
 
-struct Screenshot;
+struct Screenshot{
+    name: String,
+    image: image::Handle,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -15,9 +19,7 @@ pub enum Message {
 
 impl Sandbox for Screenshot {
     type Message = Message;
-    fn new() -> Screenshot {
-        Screenshot
-    }
+    fn new() -> Screenshot { Screenshot{name: "Empty".to_string(), image: image::Handle::from_memory("resources/empty-image.png")}  }
     fn title(&self) -> String {
         String::from("Multi-platform Screen-grabbing Utility")
     }
@@ -35,14 +37,18 @@ impl Sandbox for Screenshot {
 
     fn view(&self) -> Element<Message> {
         // We use a column: a simple vertical layout
-        return row![
-            // The increment button. We tell it to produce an
-            // `IncrementPressed` message when pressed
-            button("New Screenshot").on_press(Message::NewScreenshot),
-
-            // The decrement button. We tell it to produce a
-            // `DecrementPressed` message when pressed
-            button("Settings").on_press(Message::Settings),
-        ].padding(100).align_items(Alignment::Center).into();
+        return column![
+            image::viewer(self.image.clone()),
+            row![
+                button("New Screenshot").style(theme::Button::Primary).on_press(Message::NewScreenshot),
+                button("Settings").style(theme::Button::Secondary).on_press(Message::Settings),
+            ]
+                .padding(20)
+                .spacing(20)
+                .align_items(Alignment::Center),
+        ]
+            .spacing(20)
+            .align_items(Alignment::Center)
+            .into();
     }
 }
