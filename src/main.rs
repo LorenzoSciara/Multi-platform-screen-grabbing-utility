@@ -10,6 +10,36 @@ use iced::Background::Color;
 use iced::widget::{button, row, text, column, image, Image, container};
 
 
+struct Screenshot {
+    name: String,
+    pageState: PagesState,
+    screenState: ScreenState,
+    image: image::Handle,
+}
+
+#[derive(Debug, Clone)]
+pub enum Message{
+    PagesState(PagesState),
+    ScreenState(ScreenState),
+}
+
+#[derive(
+Debug, Clone, Copy, PartialEq, Eq
+)]
+pub enum PagesState{
+    Home,
+    Settings,
+    Modify,
+}
+
+#[derive(
+Debug, Clone, Copy, PartialEq, Eq
+)]
+pub enum ScreenState{
+    ScreenTrue,
+    ScreenFalse,
+}
+
 
 pub fn main() -> iced::Result {
     let settings = Settings {
@@ -22,41 +52,13 @@ pub fn main() -> iced::Result {
     Screenshot::run(settings)
 }
 
-struct Screenshot {
-    name: String,
-    pageState: PagesState,
-    image: image::Handle,
-}
-
-#[derive(Debug, Clone)]
-pub enum Message{
-    PagesState(PagesState),
-}
-
-#[derive(
-Debug, Clone, Copy, PartialEq, Eq
-)]
-pub enum PagesState{
-    Home(ScreenState),
-    Settings,
-    Modify,
-}
-
-#[derive(
-Debug, Clone, Copy, PartialEq, Eq, Default,
-)]
-pub enum ScreenState{
-    #[default]
-    ScreenTrue,
-    ScreenFalse,
-}
-
 impl Sandbox for Screenshot {
     type Message = Message;
     fn new() -> Screenshot {
         Screenshot {
             name: "Empty".to_string(),
-            pageState: PagesState::Home(ScreenState::ScreenFalse),
+            pageState: PagesState::Home,
+            screenState: ScreenState::ScreenFalse,
             image: image::Handle::from_path(Path::new("./resources/empty-image.png")),
         }
     }
@@ -69,6 +71,9 @@ impl Sandbox for Screenshot {
         match message {
             Message::PagesState(filter) => {
                     self.pageState=filter;
+            },
+            Message::ScreenState(filter) => {
+                self.screenState=filter;
             }
         }
     }
@@ -77,9 +82,11 @@ impl Sandbox for Screenshot {
         // We use a column: a simple vertical layout
         return container(
             match self.pageState {
-                PagesState::Home(ScreenState::ScreenTrue)=> home(ScreenState::ScreenTrue),
-                PagesState::Home(ScreenState::ScreenFalse) => home(ScreenState::ScreenFalse),
-                PagesState::Settings => settings(),
+                PagesState::Home=> match self.screenState {
+                    ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
+                    ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
+                },
+                PagesState::Settings => settings(self.screenState),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)

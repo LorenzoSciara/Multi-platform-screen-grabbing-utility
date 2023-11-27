@@ -8,7 +8,7 @@ use crate::{Message, ScreenState, PagesState};
 pub fn modify() -> Element<'static, Message>{
     return column![
             row![
-                        button("New Screenshot").style(theme::Button::Primary).on_press(Message::PagesState(PagesState::Home(ScreenState::ScreenTrue))),
+                        button("New Screenshot").style(theme::Button::Primary).on_press(Message::ScreenState(ScreenState::ScreenTrue)),
                         button("Settings").style(theme::Button::Secondary).on_press(Message::PagesState(PagesState::Settings)),
                 ]
                     .spacing(20)
