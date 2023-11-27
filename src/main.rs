@@ -1,54 +1,91 @@
-use iced::{Element, Sandbox, Settings, Alignment, Length, alignment, theme};
+mod UI{pub mod home; pub mod modify; pub mod settings;}
+use crate::UI::home::home;
+use crate::UI::modify::modify;
+use crate::UI::settings::settings;
+
+use std::iter::Filter;
+use std::path::Path;
+use iced::{Element, Sandbox, Settings, Alignment, Length, alignment, theme, window};
 use iced::Background::Color;
-use iced::widget::{button, row, text, column, image, Image};
+use iced::widget::{button, row, text, column, image, Image, container};
+
+
 
 pub fn main() -> iced::Result {
-    Screenshot::run(Settings::default())
+    let settings = Settings {
+        window: window::Settings {
+            size: (350, 80), // Imposta le dimensioni della finestra
+            ..Default::default()
+        },
+        ..Settings::default()
+    };
+    Screenshot::run(settings)
 }
 
-struct Screenshot{
+struct Screenshot {
     name: String,
+    pageState: PagesState,
     image: image::Handle,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum Message {
-    NewScreenshot,
+#[derive(Debug, Clone)]
+pub enum Message{
+    PagesState(PagesState),
+}
+
+#[derive(
+Debug, Clone, Copy, PartialEq, Eq
+)]
+pub enum PagesState{
+    Home(ScreenState),
     Settings,
+    Modify,
+}
+
+#[derive(
+Debug, Clone, Copy, PartialEq, Eq, Default,
+)]
+pub enum ScreenState{
+    #[default]
+    ScreenTrue,
+    ScreenFalse,
 }
 
 impl Sandbox for Screenshot {
     type Message = Message;
-    fn new() -> Screenshot { Screenshot{name: "Empty".to_string(), image: image::Handle::from_memory("resources/empty-image.png")}  }
+    fn new() -> Screenshot {
+        Screenshot {
+            name: "Empty".to_string(),
+            pageState: PagesState::Home(ScreenState::ScreenFalse),
+            image: image::Handle::from_path(Path::new("./resources/empty-image.png")),
+        }
+    }
+
     fn title(&self) -> String {
         String::from("Multi-platform Screen-grabbing Utility")
     }
 
     fn update(&mut self, message: Self::Message) {
         match message {
-            Message::NewScreenshot =>{
-
-            }
-            Message::Settings => {
-
+            Message::PagesState(filter) => {
+                    self.pageState=filter;
             }
         }
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'static, Message> {
         // We use a column: a simple vertical layout
-        return column![
-            image::viewer(self.image.clone()),
-            row![
-                button("New Screenshot").style(theme::Button::Primary).on_press(Message::NewScreenshot),
-                button("Settings").style(theme::Button::Secondary).on_press(Message::Settings),
-            ]
-                .padding(20)
-                .spacing(20)
-                .align_items(Alignment::Center),
-        ]
-            .spacing(20)
-            .align_items(Alignment::Center)
+        return container(
+            match self.pageState {
+                PagesState::Home(ScreenState::ScreenTrue)=> home(ScreenState::ScreenTrue),
+                PagesState::Home(ScreenState::ScreenFalse) => home(ScreenState::ScreenFalse),
+                PagesState::Settings => settings(),
+                PagesState::Modify => modify(),
+            })
+            .width(Length::Fill)
+            .padding(25)
+            .center_x()
+            .center_y()
             .into();
     }
 }
