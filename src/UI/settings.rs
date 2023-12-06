@@ -7,8 +7,8 @@ use crate::{Message, ScreenState, PagesState};
 pub fn settings(screenState: ScreenState) -> Element<'static, Message> {
     return column![
         row![
-            button("Back").style(theme::Button::Destructive).on_press(Message::PagesState(PagesState::Home)),
-            button("Save").style(theme::Button::Positive).on_press(Message::PagesState(PagesState::Home)),
+            button("Back").style(theme::Button::Destructive).on_press(Message::Settings(PagesState::Home)),
+            button("Save").style(theme::Button::Positive).on_press(Message::Settings(PagesState::Home)),
         ]
         .spacing(20)
         .align_items(Alignment::Center),

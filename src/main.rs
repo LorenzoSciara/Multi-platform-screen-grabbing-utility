@@ -51,8 +51,9 @@ pub enum ScreenState{
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
-    PagesState(PagesState),
-    ScreenState(ScreenState),
+    Screenshot(ScreenState),
+    Settings(PagesState),
+    Modify(PagesState),
 }
 
 impl Application for Screenshot {
@@ -74,13 +75,16 @@ impl Application for Screenshot {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::PagesState(filter) => {
+            Message::Settings(filter) => {
                 self.pageState=filter;
-                return Command::none();
+                return window::resize(Size::new(400, 400));
             },
-            Message::ScreenState(filter) => {
+            Message::Screenshot(filter) => {
                 self.screenState=filter;
                 return window::minimize(true);
+            }
+            Message::Modify(filter) =>{
+                return Command::none();
             }
         }
     }
