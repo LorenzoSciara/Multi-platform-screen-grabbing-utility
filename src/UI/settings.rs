@@ -5,7 +5,7 @@ use iced::widget::{button, row, text, column, container};
 use crate::{Message, ScreenState, PagesState, Choice};
 
 use iced::widget::{checkbox, horizontal_space, radio, scrollable, slider, text_input, toggler, vertical_space, Text, Radio};
-use iced::widget::{Button, Column, Container, Slider};
+use iced::widget::{Button, Column, Container, Slider, Toggler};
 use iced::{Font, Pixels, Renderer};
 
 use iced::widget::container::{Appearance, StyleSheet};
@@ -23,96 +23,8 @@ fn delete_icon() -> Text<'static> {
     icon('\u{F1F8}')
 }
 
+fn radio_container() -> Container<'static, Message> {
 
-pub fn settings(screenState: ScreenState, toggler_value: bool) -> Element<'static, Message> {
-    let undobutton = button(row![delete_icon(), text("Back").width(Length::Fill).size(20) ]
-        .spacing(10)
-        .align_items(Alignment::Center))
-        .on_press(Message::PagesState(PagesState::Home))
-        .style(theme::Button::Destructive)
-        .width(Length::Fixed(100.0))
-        .height(Length::Fixed(50.0))
-        .padding(10);
-
-    let space = horizontal_space(Length::Fill);
-
-    let savebutton = button(row![delete_icon(), text("Save").width(Length::Fill).size(20) ]
-        .spacing(10)
-        .align_items(Alignment::Center))
-        .on_press(Message::PagesState(PagesState::Home))
-        .style(theme::Button::Positive)
-        .width(Length::Fixed(100.0))
-        .height(Length::Fixed(50.0))
-        .padding(10);
-
-    let controls = row![undobutton, space, savebutton];
-
-    let settingtext1 = text("Save the screenshot to the default location")
-        .width(Length::Fill)
-        .size(18)
-        .horizontal_alignment(alignment::Horizontal::Center)
-        .vertical_alignment(alignment::Vertical::Center);
-
-
-    let space1 = horizontal_space(Length::Fill);
-
-    let settinginput1 = toggler(
-        String::from(""),
-        toggler_value,
-        |b|Message::TogglerToggled(b)
-        ,
-    )
-        .width(Length::Shrink)
-        .spacing(10);
-
-    let setting1 = row![settingtext1, space1, settinginput1];
-
-    let container1 = Container::new(setting1)
-        .style(style::settings_container)
-        .height(80)
-        .width(Length::Fill)
-        .padding(10)
-        .align_y(alignment::Vertical::Center);
-
-
-
-    let settingtext2 = text("Copy the screenshot into the clipdoard")
-        .width(Length::Fill)
-        .size(18)
-        .horizontal_alignment(alignment::Horizontal::Center)
-        .vertical_alignment(alignment::Vertical::Center);
-
-
-    let space2 = horizontal_space(Length::Fill);
-
-    let settinginput2 = toggler(
-        String::from(""),
-        toggler_value,
-        |b|Message::TogglerToggled(b)
-        ,
-    )
-        .width(Length::Shrink)
-        .spacing(10);
-
-    let setting2 = row![settingtext2, space2, settinginput2];
-
-    let container2 = Container::new(setting2)
-        .style(style::settings_container)
-        .height(80)
-        .width(Length::Fill)
-        .padding(10)
-        .align_y(alignment::Vertical::Center);
-
-
-
-    let settingtext3 = text("Select the monitor in which to screenshot")
-        .width(Length::Fill)
-        .size(18)
-        .horizontal_alignment(alignment::Horizontal::Center)
-        .vertical_alignment(alignment::Vertical::Center);
-
-
-    let space3 = horizontal_space(Length::Fill);
 
     let selected_choice = Some(Choice::A);
 
@@ -137,25 +49,80 @@ pub fn settings(screenState: ScreenState, toggler_value: bool) -> Element<'stati
         Message::RadioSelected,
     );
 
-    let settinginput3 = row![a, b, c];
+    let settinginput = row![a, b, c];
+    let container = Container::new(settinginput);
+    return container;
 
-    let setting3 = row![settingtext3, space3, settinginput3];
+}
 
-    let container3 = Container::new(setting3)
+fn toggler_container(toggler_value: bool) -> Container<'static, Message> {
+    let settinginput = toggler(
+        String::from(""),
+        toggler_value,
+        |b|Message::TogglerToggled(b)
+        ,
+    )
+        .width(Length::Shrink)
+        .spacing(10);
+
+    let container = Container::new(settinginput);
+    return container;
+
+}
+fn settings_box(settings_text: String, settings_container: Container<'static, Message>) -> Container<'static, Message> {
+    let settingtext = text(settings_text)
+        .width(Length::Fill)
+        .size(18)
+        .horizontal_alignment(alignment::Horizontal::Center)
+        .vertical_alignment(alignment::Vertical::Center);
+
+    let space = horizontal_space(Length::Fill);
+
+    let setting = row![settingtext, space, settings_container];
+
+    let container = Container::new(setting)
         .style(style::settings_container)
         .height(80)
         .width(Length::Fill)
         .padding(10)
         .align_y(alignment::Vertical::Center);
 
+    return container;
 
+}
+pub fn settings(screenState: ScreenState, toggler_value: bool) -> Element<'static, Message> {
+    let undobutton = button(row![delete_icon(), text("Back").width(Length::Fill).size(20) ]
+        .spacing(10)
+        .align_items(Alignment::Center))
+        .on_press(Message::PagesState(PagesState::Home))
+        .style(theme::Button::Destructive)
+        .width(Length::Fixed(100.0))
+        .height(Length::Fixed(50.0))
+        .padding(10);
 
+    let space = horizontal_space(Length::Fill);
 
+    let savebutton = button(row![delete_icon(), text("Save").width(Length::Fill).size(20) ]
+        .spacing(10)
+        .align_items(Alignment::Center))
+        .on_press(Message::PagesState(PagesState::Home))
+        .style(theme::Button::Positive)
+        .width(Length::Fixed(100.0))
+        .height(Length::Fixed(50.0))
+        .padding(10);
 
-
+    let controls = row![undobutton, space, savebutton];
     let spacev = vertical_space(Length::Fixed(30.0));
-    let spacev2 = vertical_space(Length::Fixed(10.0));
-    let spacev3 = vertical_space(Length::Fixed(10.0));
+
+    let container1 = settings_box("Save the screenshot to the default location".to_string(), toggler_container(toggler_value));
+    let container2 = settings_box("Copy the screenshot into the clipdoard".to_string(), toggler_container(toggler_value));
+    let container3 = settings_box("Select the monitor in which to screenshot".to_string(), radio_container());
+    let container3 = settings_box("Select the monitor in which to screenshot".to_string(), radio_container());
+
+
+
+
+
 
 
     let content: Element<_> = column![ controls, spacev, container1, container2, container3 ]
