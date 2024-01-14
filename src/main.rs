@@ -27,11 +27,11 @@ pub fn main() -> iced::Result { //Il main non ritorna per permettere la programm
 struct Screenshot {
     pageState: PagesState,
     screenState: ScreenState,
-    /*sender: mpsc::Sender<i32>,
-    receiver: mpsc::Receiver<i32>,*/
     sender: RefCell<Option<mpsc::UnboundedSender<i32>>>,
     receiver: RefCell<Option<mpsc::UnboundedReceiver<i32>>>,
     message: i32,
+    toggler_value: bool
+
 }
 
 #[derive(
@@ -51,12 +51,22 @@ pub enum ScreenState{
     ScreenFalse,
 }
 
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Choice {
+    A,
+    B,
+    C,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
     PagesState(PagesState),
     ScreenState(ScreenState),
     ScreenDone,
-    ScreenNotDone
+    ScreenNotDone,
+    TogglerToggled(bool),
+    RadioSelected(Choice)
 }
 
 impl Application for Screenshot {
@@ -74,6 +84,7 @@ impl Application for Screenshot {
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
             message: -1,
+            toggler_value: true
         }, Command::none());
     }
 
@@ -105,6 +116,11 @@ impl Application for Screenshot {
             Message::ScreenNotDone => {
                 return Command::none();
             }
+            Message::TogglerToggled(value) => { self.toggler_value = value;
+                return Command::none();}
+
+            Message::RadioSelected(Choice) => {
+                return Command::none();}
         }
     }
 
@@ -115,7 +131,7 @@ impl Application for Screenshot {
                     ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
                     ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
                 },
-                PagesState::Settings => settings(self.screenState),
+                PagesState::Settings => settings(self.screenState, self.toggler_value),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)
