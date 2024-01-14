@@ -11,7 +11,6 @@ use iced::{Font, Pixels, Renderer};
 use iced::widget::container::{Appearance, StyleSheet};
 
 
-
 const ICONS: Font = Font::with_name("Iced-Todos-Icons");
 
 fn icon(unicode: char) -> Text<'static> {
@@ -23,6 +22,19 @@ fn icon(unicode: char) -> Text<'static> {
 fn delete_icon() -> Text<'static> {
     icon('\u{F1F8}')
 }
+
+
+fn timer_container(timer_value: i32)-> Container<'static, Message> {
+
+    let increment_button = button("Increment").on_press(Message::TimerChange(timer_value+1));
+    let timer_text = text(timer_value);
+    let decrement_button = button("Decrement").on_press(Message::TimerChange(timer_value-1));
+    let settinginput = row![decrement_button, timer_text, increment_button];
+
+    let container = Container::new(settinginput);
+    return container;
+}
+
 
 fn radio_container(radio_value: Choice, radio_type: String) -> Container<'static, Message> {
 
@@ -92,7 +104,7 @@ fn settings_box(settings_text: String, settings_container: Container<'static, Me
     return container;
 
 }
-pub fn settings(screenState: ScreenState, toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice) -> Element<'static, Message> {
+pub fn settings(screenState: ScreenState, toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value:i32) -> Element<'static, Message> {
     let undobutton = button(row![delete_icon(), text("Back").width(Length::Fill).size(20) ]
         .spacing(10)
         .align_items(Alignment::Center))
@@ -120,6 +132,7 @@ pub fn settings(screenState: ScreenState, toggler_value_autosave: bool, toggler_
     let container2 = settings_box("Copy the screenshot into the clipdoard".to_string(), toggler_container(toggler_value_clipboard, "clipboard".to_string()));
     let container3 = settings_box("Select the monitor in which to screenshot".to_string(), radio_container(radio_value_monitor, "monitor".to_string()));
     let container4 = settings_box("Select the screenshot format".to_string(), radio_container(radio_value_format, "clipboard".to_string()));
+    let container5 = settings_box("Set a timer before the screenshot".to_string(), timer_container(timer_value));
 
 
 
@@ -127,7 +140,7 @@ pub fn settings(screenState: ScreenState, toggler_value_autosave: bool, toggler_
 
 
 
-    let content: Element<_> = column![ controls, spacev, container1, container2, container3, container4 ]
+    let content: Element<_> = column![ controls, spacev, container1, container2, container3, container4, container5 ]
         .spacing(20)
         .padding(20)
         .into();

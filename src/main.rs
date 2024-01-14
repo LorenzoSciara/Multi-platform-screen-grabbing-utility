@@ -33,7 +33,8 @@ struct Screenshot {
     toggler_value_clipboard: bool,
     toggler_value_autosave: bool,
     radio_value_monitor: Choice,
-    radio_value_format: Choice
+    radio_value_format: Choice,
+    timer_value: i32
 }
 
 #[derive(
@@ -71,6 +72,7 @@ pub enum Message {
     TogglerToggledClipboard(bool),
     RadioSelectedMonitor(Choice),
     RadioSelectedFormat(Choice),
+    TimerChange(i32)
 }
 
 impl Application for Screenshot {
@@ -92,6 +94,7 @@ impl Application for Screenshot {
             toggler_value_autosave: true,
             radio_value_monitor: Choice::A,
             radio_value_format: Choice::A,
+            timer_value: 0
         }, Command::none());
     }
 
@@ -127,9 +130,11 @@ impl Application for Screenshot {
                 return Command::none();}
             Message::TogglerToggledClipboard(value) => { self.toggler_value_clipboard = value;
                 return Command::none();}
-            Message::RadioSelectedMonitor(Choice) => { self.radio_value_monitor = Choice;
+            Message::RadioSelectedMonitor(value) => { self.radio_value_monitor = value;
                 return Command::none();}
-            Message::RadioSelectedFormat(Choice) => { self.radio_value_format = Choice;
+            Message::RadioSelectedFormat(value) => { self.radio_value_format = value;
+                return Command::none();}
+            Message::TimerChange(value) => { self.timer_value = value;
                 return Command::none();}
         }
     }
@@ -141,7 +146,7 @@ impl Application for Screenshot {
                     ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
                     ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
                 },
-                PagesState::Settings => settings(self.screenState, self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format ),
+                PagesState::Settings => settings(self.screenState, self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value ),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)
