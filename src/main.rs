@@ -30,8 +30,10 @@ struct Screenshot {
     sender: RefCell<Option<mpsc::UnboundedSender<i32>>>,
     receiver: RefCell<Option<mpsc::UnboundedReceiver<i32>>>,
     message: i32,
-    toggler_value: bool
-
+    toggler_value_clipboard: bool,
+    toggler_value_autosave: bool,
+    radio_value_monitor: Choice,
+    radio_value_format: Choice
 }
 
 #[derive(
@@ -65,8 +67,10 @@ pub enum Message {
     ScreenState(ScreenState),
     ScreenDone,
     ScreenNotDone,
-    TogglerToggled(bool),
-    RadioSelected(Choice)
+    TogglerToggledAutosave(bool),
+    TogglerToggledClipboard(bool),
+    RadioSelectedMonitor(Choice),
+    RadioSelectedFormat(Choice),
 }
 
 impl Application for Screenshot {
@@ -84,7 +88,10 @@ impl Application for Screenshot {
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
             message: -1,
-            toggler_value: true
+            toggler_value_clipboard: true,
+            toggler_value_autosave: true,
+            radio_value_monitor: Choice::A,
+            radio_value_format: Choice::A,
         }, Command::none());
     }
 
@@ -116,10 +123,13 @@ impl Application for Screenshot {
             Message::ScreenNotDone => {
                 return Command::none();
             }
-            Message::TogglerToggled(value) => { self.toggler_value = value;
+            Message::TogglerToggledAutosave(value) => { self.toggler_value_autosave = value;
                 return Command::none();}
-
-            Message::RadioSelected(Choice) => {
+            Message::TogglerToggledClipboard(value) => { self.toggler_value_clipboard = value;
+                return Command::none();}
+            Message::RadioSelectedMonitor(Choice) => { self.radio_value_monitor = Choice;
+                return Command::none();}
+            Message::RadioSelectedFormat(Choice) => { self.radio_value_format = Choice;
                 return Command::none();}
         }
     }
@@ -131,7 +141,7 @@ impl Application for Screenshot {
                     ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
                     ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
                 },
-                PagesState::Settings => settings(self.screenState, self.toggler_value),
+                PagesState::Settings => settings(self.screenState, self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format ),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)
