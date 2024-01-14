@@ -2,7 +2,7 @@ use std::iter::Filter;
 use std::path::Path;
 use iced::{Element, Sandbox, Settings, Alignment, Length, alignment, theme};
 use iced::Background::Color;
-use iced::widget::{button, row, text, column, image, Image, container};
+use iced::widget::{button, row, text, column, container};
 use crate::{Message, ScreenState, PagesState};
 
 pub fn modify() -> Element<'static, Message>{

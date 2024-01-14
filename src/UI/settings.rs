@@ -1,7 +1,7 @@
 use std::iter::Filter;
 use std::path::Path;
 use iced::{Element, Sandbox, Settings, Alignment, Length, alignment, theme, Color};
-use iced::widget::{button, row, text, column, image, Image, container};
+use iced::widget::{button, row, text, column, container};
 use crate::{Message, ScreenState, PagesState};
 
 pub fn settings(screenState: ScreenState) -> Element<'static, Message> {
