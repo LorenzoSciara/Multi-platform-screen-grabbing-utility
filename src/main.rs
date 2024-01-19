@@ -34,7 +34,9 @@ struct Screenshot {
     toggler_value_autosave: bool,
     radio_value_monitor: Choice,
     radio_value_format: Choice,
-    timer_value: i32
+    timer_value: i32,
+    shortcut_value: String,
+    path_value: String
 }
 
 #[derive(
@@ -62,7 +64,7 @@ pub enum Choice {
     C,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Message {
     PagesState(PagesState),
     ScreenState(ScreenState),
@@ -72,7 +74,9 @@ pub enum Message {
     TogglerToggledClipboard(bool),
     RadioSelectedMonitor(Choice),
     RadioSelectedFormat(Choice),
-    TimerChange(i32)
+    TimerChange(i32),
+    Shortcut(String),
+    Path(String)
 }
 
 impl Application for Screenshot {
@@ -94,7 +98,10 @@ impl Application for Screenshot {
             toggler_value_autosave: true,
             radio_value_monitor: Choice::A,
             radio_value_format: Choice::A,
-            timer_value: 0
+            timer_value: 0,
+            shortcut_value: String::new(),
+            path_value: String::new()
+
         }, Command::none());
     }
 
@@ -136,6 +143,10 @@ impl Application for Screenshot {
                 return Command::none();}
             Message::TimerChange(value) => { self.timer_value = value;
                 return Command::none();}
+            Message::Shortcut(value) => { self.shortcut_value = value;
+                return Command::none();}
+            Message::Path(value) => { self.path_value = value;
+                return Command::none();}
         }
     }
 
@@ -146,7 +157,7 @@ impl Application for Screenshot {
                     ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
                     ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
                 },
-                PagesState::Settings => settings(self.screenState, self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value ),
+                PagesState::Settings => settings(self.screenState, self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone() ),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)
