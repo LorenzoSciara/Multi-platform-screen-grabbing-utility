@@ -4,8 +4,6 @@ use image::RgbaImage;
 
 pub struct Screenshot {
     pub screen: Screen,
-    pub width: u32,
-    pub height: u32,
 }
 
 impl Screenshot {
@@ -17,8 +15,6 @@ impl Screenshot {
             .into_iter()
             .map(|screen| Self {
                 screen: screen,
-                width: screen.display_info.width,
-                height: screen.display_info.height,
             })
             .collect();
 
@@ -31,8 +27,6 @@ impl Screenshot {
 
         Ok(Self {
             screen: *primary,
-            width: primary.display_info.width,
-            height: primary.display_info.height,
         })
     }
 
@@ -42,8 +36,6 @@ impl Screenshot {
 
         Ok(Self {
             screen: *screen,
-            width: screen.display_info.width,
-            height: screen.display_info.height,
         })
     }
 

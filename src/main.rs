@@ -24,7 +24,7 @@ fn main() -> io::Result<()> {
                            img.save(format!("monitorasd.png"));
                        let region = res.screen.capture_area(300,300,300,300).unwrap();
                             region.save(format!("region.png"));
-                       println!("Width:{} Height:{}", res.width,res.height);
+                       println!("Width:{} Height:{}", res.screen.display_info.width,res.screen.display_info.height);
 
                    }
                    Err(err) => {
