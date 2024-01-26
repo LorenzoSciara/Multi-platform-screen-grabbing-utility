@@ -63,6 +63,7 @@ impl HotkeyConfig {
         let modifier = match modifier_arg.to_lowercase().as_str() {
             "control" => Key::ControlLeft,
             "shift" => Key::ShiftLeft,
+            "alt" => Key::Alt,
             _ => return Err("Il primo argomento deve essere 'Control' o 'Shift'"),
         };
 
