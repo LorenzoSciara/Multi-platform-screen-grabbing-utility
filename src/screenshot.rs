@@ -47,4 +47,10 @@ impl Screenshot {
         })
     }
 
+    pub fn monitors_num() -> usize {
+        let screens = Screen::all().unwrap();
+        let monum = screens.len();
+        return monum;
+    }
+
 }
