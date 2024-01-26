@@ -6,13 +6,17 @@ use iced::{executor};
 use iced::widget::{container};
 use iced::window;
 use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size};
-use std::thread;
+use std::{io, thread, time};
 //use std::sync::mpsc;
 use tokio::sync::mpsc;
 use std::cell::RefCell;
 use std::time::Duration;
 use iced::window::{UserAttention};
-
+use multi_platform_screen_grabbing_utility::hotkeys::{HotkeyListener,HotkeyConfig};
+use screenshots::{Screen};
+use screenshots::Screen;
+use tokio::net::windows::named_pipe::PipeMode::Message;
+use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
     let settings = Settings {
@@ -22,13 +26,12 @@ pub fn main() -> iced::Result { //Il main non ritorna per permettere la programm
         },
         ..Settings::default()
     };
-    return Screenshot::run(settings);
+    return ScreenshotGrabber::run(settings);
 }
 
 #[derive()]
-struct Screenshot {
+struct ScreenshotGrabber {
     page_state: PagesState,
-    screen_state: ScreenState,
     sender: RefCell<Option<mpsc::UnboundedSender<i32>>>,
     receiver: RefCell<Option<mpsc::UnboundedReceiver<i32>>>,
     toggler_value_clipboard: bool,
@@ -37,7 +40,8 @@ struct Screenshot {
     radio_value_format: Choice,
     timer_value: i32,
     shortcut_value: String,
-    path_value: String
+    path_value: String,
+    screen_state: bool
 }
 
 #[derive(
@@ -49,13 +53,7 @@ pub enum PagesState{
     Modify,
 }
 
-#[derive(
-Debug, Clone, Copy, PartialEq, Eq
-)]
-pub enum ScreenState{
-    ScreenTrue,
-    ScreenFalse,
-}
+
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,6 +61,16 @@ pub enum Choice {
     A,
     B,
     C,
+}
+
+impl Choice {
+    fn to_numeric(&self) -> u32 {
+        match self {
+            Choice::A => 1,
+            Choice::B => 2,
+            Choice::C => 3,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -78,10 +86,11 @@ pub enum Message {
     RadioSelectedFormat(Choice),
     TimerChange(i32),
     Shortcut(String),
-    Path(String)
+    Path(String),
+    ScreenState(bool)
 }
 
-impl Application for Screenshot {
+impl Application for ScreenshotGrabber {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
@@ -90,9 +99,8 @@ impl Application for Screenshot {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         //let (tx, rx) = mpsc::channel();
         let (tx, rx) = mpsc::unbounded_channel::<i32>();
-        return (Screenshot {
+        return (ScreenshotGrabber {
             page_state: PagesState::Home,
-            screen_state: ScreenState::ScreenFalse,
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
             toggler_value_clipboard: true,
@@ -101,8 +109,8 @@ impl Application for Screenshot {
             radio_value_format: Choice::A,
             timer_value: 0,
             shortcut_value: String::new(),
-            path_value: String::new()
-
+            path_value: String::new(),
+            screen_state: false,
         }, Command::none());
     }
 
@@ -113,7 +121,22 @@ impl Application for Screenshot {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::NewScreenshotButton => {
-                self.screen_state =ScreenState::ScreenTrue;
+                let monitor_value = self.radio_value_monitor.to_numeric();
+                match Screenshot::capture_screen(monitor_value) {
+                    Ok(res) => {
+                        let img = res.convert().unwrap();
+                        img.save(format!("monitorasd.png"));
+                        let region = res.screen.capture_area(300,300,300,300).unwrap();
+                        region.save(format!("region.png"));
+                        println!("Width:{} Height:{}", res.screen.display_info.width,res.screen.display_info.height);
+                        Message::ScreenState(Some(true));
+                    }
+                    Err(err) => {
+                        eprintln!("Error: {}", err);
+                    }
+                }
+
+
                 let sender = self.sender.clone();
                 thread::spawn(move|| {
                     let i = 1;
@@ -131,7 +154,7 @@ impl Application for Screenshot {
             },
             Message::HomeButton => {
                 self.page_state =PagesState::Home;
-                if self.screen_state == ScreenState::ScreenTrue{
+                if self.screen_result == true {
                     return Command::none();
                 }
                 else{
@@ -142,6 +165,9 @@ impl Application for Screenshot {
                 println!("Screen done arrivato");
                 return window::request_user_attention(Some(UserAttention::Informational));
                 //return window::resize(Size::new(800, 800));
+            },
+            Message::ScreenState(value) => { self.screen_state = value;
+                return Command::none();
             },
             Message::TogglerToggledAutosave(value) => { self.toggler_value_autosave = value;
                 return Command::none();
@@ -170,10 +196,7 @@ impl Application for Screenshot {
     fn view(&self) -> Element<Message> {
         return container(
             match self.page_state {
-                PagesState::Home => match self.screen_state {
-                    ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
-                    ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
-                },
+                PagesState::Home => home(self.screen_state),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone() ),
                 PagesState::Modify => modify(),
             })
