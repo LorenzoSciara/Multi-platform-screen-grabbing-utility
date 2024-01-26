@@ -3,7 +3,7 @@ use std::error::Error;
 use image::RgbaImage;
 
 pub struct Screenshot {
-    pub image: RgbaImage,
+    pub screen: Screen,
     pub width: u32,
     pub height: u32,
 }
@@ -16,7 +16,7 @@ impl Screenshot {
         let screenshots: Vec<Self> = screens
             .into_iter()
             .map(|screen| Self {
-                image: screen.capture().unwrap(),
+                screen: screen,
                 width: screen.display_info.width,
                 height: screen.display_info.height,
             })
@@ -30,7 +30,7 @@ impl Screenshot {
         let primary = screens.get(0).ok_or("Screen not found")?;
 
         Ok(Self {
-            image: primary.capture().unwrap(),
+            screen: *primary,
             width: primary.display_info.width,
             height: primary.display_info.height,
         })
@@ -41,7 +41,7 @@ impl Screenshot {
         let screen = screens.get(sc as usize).ok_or("Screen index out of bounds")?;
 
         Ok(Self {
-            image: screen.capture().unwrap(),
+            screen: *screen,
             width: screen.display_info.width,
             height: screen.display_info.height,
         })
@@ -51,6 +51,12 @@ impl Screenshot {
         let screens = Screen::all().unwrap();
         let monum = screens.len();
         return monum;
+    }
+
+    pub fn convert(&self) -> Result<RgbaImage,Box<dyn Error>> {
+        let img = self.screen.capture().unwrap();
+
+        Ok(img)
     }
 
 }

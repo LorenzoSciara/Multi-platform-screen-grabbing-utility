@@ -16,11 +16,16 @@ fn main() -> io::Result<()> {
             if pressed_keys.contains(&hotkey_config.modifier) && pressed_keys.contains(&hotkey_config.key) {
                 println!("Combinazione {:?} + {:?} premuta!", hotkey_config.modifier, hotkey_config.key);
 
-               match Screenshot::capture_all() {
+               let mnum = Screenshot::monitors_num();
+                println!("{}", mnum);
+               match Screenshot::capture_first() {
                    Ok(res) => {
-                       for (i,s) in res.iter().enumerate() {
-                           s.image.save(format!("monitorasd{}.png", i));
-                       }
+                       let img = res.convert().unwrap();
+                           img.save(format!("monitorasd.png"));
+                       let region = res.screen.capture_area(300,300,300,300).unwrap();
+                            region.save(format!("region.png"));
+                       println!("Width:{} Height:{}", res.width,res.height);
+
                    }
                    Err(err) => {
                        eprintln!("Error: {}", err);
