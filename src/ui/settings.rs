@@ -1,27 +1,7 @@
-use std::iter::Filter;
-use std::path::Path;
-use iced::{Element, Sandbox, Settings, Alignment, Length, alignment, theme, Color};
+use iced::{Element, Length, alignment, theme};
 use iced::widget::{button, row, text, column, container};
-use crate::{Message, ScreenState, PagesState, Choice};
-
-use iced::widget::{checkbox, horizontal_space, radio, scrollable, slider, text_input, toggler, vertical_space, Text, Radio};
-use iced::widget::{Button, Column, Container, Slider, Toggler};
-use iced::{Font, Pixels, Renderer};
-
-use iced::widget::container::{Appearance, StyleSheet};
-
-
-const ICONS: Font = Font::with_name("Iced-Todos-Icons");
-
-fn icon(unicode: char) -> Text<'static> {
-    text(unicode.to_string())
-        .font(ICONS)
-        .width(20)
-        .horizontal_alignment(alignment::Horizontal::Center)
-}
-fn delete_icon() -> Text<'static> {
-    icon('\u{F1F8}')
-}
+use crate::{Message, Choice};
+use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container};
 
 fn select_container(select_value: String, select_type: String) -> Container<'static, Message> {
     let text_box = Container::new(text(select_value).size(20).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
@@ -104,9 +84,9 @@ fn settings_box(settings_text: String, settings_container: Container<'static, Me
         .align_y(alignment::Vertical::Center);
     return container;
 }
-pub fn settings(screenState: ScreenState, toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value:i32, shortcut_value:String, path_value:String) -> Element<'static, Message> {
-    let undobutton = button(text("← Back").width(Length::Fill).size(20))
-        .on_press(Message::PagesState(PagesState::Home))
+pub fn settings(toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value:i32, shortcut_value:String, path_value:String) -> Element<'static, Message> {
+    let undobutton = button(text("← Home").width(Length::Fill).size(20))
+        .on_press(Message::HomeButton)
         .style(theme::Button::Destructive)
         .width(Length::Fixed(100.0))
         .height(Length::Fixed(50.0))
@@ -183,16 +163,4 @@ mod style {
             ..Default::default()
         }
     }
-
-    pub fn general_container(theme: &Theme) -> container::Appearance {
-        let palette = theme.extended_palette();
-
-        container::Appearance {
-            text_color: Some(palette.background.strong.text),
-            background: Some(Color::from_rgb(77.0 / 255.0, 78.0 / 255.0, 89.0 / 255.0).into()),
-            ..Default::default()
-        }
-    }
-
-
 }

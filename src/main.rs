@@ -1,22 +1,23 @@
-mod UI{pub mod home; pub mod modify; pub mod settings;}
-use crate::UI::home::home;
-use crate::UI::modify::modify;
-use crate::UI::settings::settings;
-use iced::{executor, settings};
-use iced::widget::{button, column, container};
+mod ui {pub mod home; pub mod modify; pub mod settings;}
+use crate::ui::home::home;
+use crate::ui::modify::modify;
+use crate::ui::settings::settings;
+use iced::{executor};
+use iced::widget::{container};
 use iced::window;
-use iced::{Alignment, Application, Command, Subscription, Element, Length, Settings, Theme, Size};
+use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size};
 use std::thread;
 //use std::sync::mpsc;
 use tokio::sync::mpsc;
 use std::cell::RefCell;
 use std::time::Duration;
+use iced::window::{UserAttention};
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
     let settings = Settings {
         window: window::Settings {
-            size: (350, 80), // Imposta le dimensioni della finestra
+            size: (350, 100), // Imposta le dimensioni della finestra
             ..Default::default()
         },
         ..Settings::default()
@@ -24,12 +25,12 @@ pub fn main() -> iced::Result { //Il main non ritorna per permettere la programm
     return Screenshot::run(settings);
 }
 
+#[derive()]
 struct Screenshot {
-    pageState: PagesState,
-    screenState: ScreenState,
+    page_state: PagesState,
+    screen_state: ScreenState,
     sender: RefCell<Option<mpsc::UnboundedSender<i32>>>,
     receiver: RefCell<Option<mpsc::UnboundedReceiver<i32>>>,
-    message: i32,
     toggler_value_clipboard: bool,
     toggler_value_autosave: bool,
     radio_value_monitor: Choice,
@@ -66,10 +67,11 @@ pub enum Choice {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    PagesState(PagesState),
-    ScreenState(ScreenState),
+    SettingsButton,
+    NewScreenshotButton,
+    ModifyButton,
+    HomeButton,
     ScreenDone,
-    ScreenNotDone,
     TogglerToggledAutosave(bool),
     TogglerToggledClipboard(bool),
     RadioSelectedMonitor(Choice),
@@ -85,15 +87,14 @@ impl Application for Screenshot {
     type Theme = Theme;
     type Flags = ();
 
-    fn new(flags: ()) -> (Self, Command<Message>) {
+    fn new(_flags: ()) -> (Self, Command<Message>) {
         //let (tx, rx) = mpsc::channel();
         let (tx, rx) = mpsc::unbounded_channel::<i32>();
         return (Screenshot {
-            pageState: PagesState::Home,
-            screenState: ScreenState::ScreenFalse,
+            page_state: PagesState::Home,
+            screen_state: ScreenState::ScreenFalse,
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
-            message: -1,
             toggler_value_clipboard: true,
             toggler_value_autosave: true,
             radio_value_monitor: Choice::A,
@@ -111,53 +112,69 @@ impl Application for Screenshot {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::PagesState(filter) => {
-                self.pageState=filter;
-                return Command::none();
-            },
-            Message::ScreenState(filter) => {
-                self.screenState = filter;
+            Message::NewScreenshotButton => {
+                self.screen_state =ScreenState::ScreenTrue;
                 let sender = self.sender.clone();
                 thread::spawn(move|| {
-                    thread::sleep(Duration::from_secs(5));
                     let i = 1;
                     sender.take().as_mut().unwrap().send(i).unwrap();
-                    println!("{} Messaggio inviato", i);
-                    thread::sleep(Duration::from_millis(200));
                 });
                 return window::minimize(true);
             },
-            Message::ScreenDone => {
+            Message::SettingsButton => {
+                self.page_state =PagesState::Settings;
+                return window::resize(Size::new(800, 800));
+            },
+            Message::ModifyButton => {
+                self.page_state =PagesState::Modify;
                 return window::resize(Size::new(700, 500));
-            }
-            Message::ScreenNotDone => {
-                return Command::none();
-            }
+            },
+            Message::HomeButton => {
+                self.page_state =PagesState::Home;
+                if self.screen_state == ScreenState::ScreenTrue{
+                    return Command::none();
+                }
+                else{
+                    return window::resize(Size::new(350, 100));
+                }
+            },
+            Message::ScreenDone => {
+                println!("Screen done arrivato");
+                return window::request_user_attention(Some(UserAttention::Informational));
+                //return window::resize(Size::new(800, 800));
+            },
             Message::TogglerToggledAutosave(value) => { self.toggler_value_autosave = value;
-                return Command::none();}
+                return Command::none();
+            },
             Message::TogglerToggledClipboard(value) => { self.toggler_value_clipboard = value;
-                return Command::none();}
+                return Command::none();
+            },
             Message::RadioSelectedMonitor(value) => { self.radio_value_monitor = value;
-                return Command::none();}
+                return Command::none();
+            },
             Message::RadioSelectedFormat(value) => { self.radio_value_format = value;
-                return Command::none();}
+                return Command::none();
+            },
             Message::TimerChange(value) => { self.timer_value = value;
-                return Command::none();}
+                return Command::none();
+            },
             Message::Shortcut(value) => { self.shortcut_value = value;
-                return Command::none();}
+                return Command::none();
+            },
             Message::Path(value) => { self.path_value = value;
-                return Command::none();}
+                return Command::none();
+            },
         }
     }
 
     fn view(&self) -> Element<Message> {
         return container(
-            match self.pageState {
-                PagesState::Home => match self.screenState {
+            match self.page_state {
+                PagesState::Home => match self.screen_state {
                     ScreenState::ScreenTrue => home(ScreenState::ScreenTrue),
                     ScreenState::ScreenFalse => home(ScreenState::ScreenFalse),
                 },
-                PagesState::Settings => settings(self.screenState, self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone() ),
+                PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone() ),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)
@@ -168,18 +185,12 @@ impl Application for Screenshot {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        //let receiver = self.receiver.clone();
         iced::subscription::unfold(
-            "led changes",
+            "channel",
             self.receiver.take(),
             move |mut receiver| async move {
-                /*if receiver == 1 {
-                    return Message::ScreenDone;
-                }
-                else {
-                    return Message::ScreenNotDone;
-                }*/
                 let num = receiver.as_mut().unwrap().recv().await.unwrap();
+                println!("{} messaggio arrivato", num);
                 return (Message::ScreenDone, receiver);
             },
         )
