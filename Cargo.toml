@@ -6,11 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Per la cattura dello schermo
-scrap = "0.5.0"
-# Per l'elaborazione delle immagini
-image = "0.24.7"
-# Per l'interfaccia utente
 iced = "0.10.0"
-# Per la gestione dei tasti di scelta rapida
 rdev = "0.5.3"
+image = "0.24.8"
+screenshots = "0.8.7"
+arboard = "3.3.0"
