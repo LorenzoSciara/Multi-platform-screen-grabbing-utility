@@ -7,16 +7,16 @@ use iced::widget::{container};
 use iced::window;
 use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size};
 use std::{io, thread, time};
-//use std::sync::mpsc;
 use tokio::sync::mpsc;
 use std::cell::RefCell;
 use std::time::Duration;
 use iced::window::{UserAttention};
 use multi_platform_screen_grabbing_utility::hotkeys::{HotkeyListener,HotkeyConfig};
-use screenshots::{Screen};
-use screenshots::Screen;
-use tokio::net::windows::named_pipe::PipeMode::Message;
+
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
+use image::RgbaImage;
+use screenshots::{Screen};
+
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
     let settings = Settings {
@@ -41,7 +41,7 @@ struct ScreenshotGrabber {
     timer_value: i32,
     shortcut_value: String,
     path_value: String,
-    screen_state: bool
+    screen_result: Option<RgbaImage> //si puo cambiare anche tipo dell'option se riesci a covertire RgbaImage in un formato raw simile ad un file con https://docs.rs/image/latest/image/type.RgbaImage.html
 }
 
 #[derive(
@@ -71,6 +71,14 @@ impl Choice {
             Choice::C => 3,
         }
     }
+    fn to_format(&self) -> String {
+        match self {
+            Choice::A => "png".to_string(),
+            Choice::B => "jpg".to_string(),
+            Choice::C => "gif".to_string(),
+        }
+    }
+
 }
 
 #[derive(Debug, Clone)]
@@ -87,7 +95,6 @@ pub enum Message {
     TimerChange(i32),
     Shortcut(String),
     Path(String),
-    ScreenState(bool)
 }
 
 impl Application for ScreenshotGrabber {
@@ -110,7 +117,7 @@ impl Application for ScreenshotGrabber {
             timer_value: 0,
             shortcut_value: String::new(),
             path_value: String::new(),
-            screen_state: false,
+            screen_result: None, //l'ho fatto perchè non so inizilizzare un RgbaImage a "zero", alternativa inizializzare con un immagine con una scritta "screen not found/make a new screen"
         }, Command::none());
     }
 
@@ -125,18 +132,16 @@ impl Application for ScreenshotGrabber {
                 match Screenshot::capture_screen(monitor_value) {
                     Ok(res) => {
                         let img = res.convert().unwrap();
-                        img.save(format!("monitorasd.png"));
-                        let region = res.screen.capture_area(300,300,300,300).unwrap();
-                        region.save(format!("region.png"));
-                        println!("Width:{} Height:{}", res.screen.display_info.width,res.screen.display_info.height);
-                        Message::ScreenState(Some(true));
+                        img.save(format!("screen_file.png")); //qua come lo usava fra il result di save() non è usato non va bene
+                        self.screen_result = Some(img);
                     }
                     Err(err) => {
-                        eprintln!("Error: {}", err);
+                        self.screen_result = None;
+                        eprintln!("Error: {}", err); //gestire l'errore non puo essere un print in console, ma un banner rosso che appare a livello grafico con iced in home.rs
                     }
                 }
 
-
+                //metti tu il thread dove volesi, probabilmente nel Ok() per far chiudere la window
                 let sender = self.sender.clone();
                 thread::spawn(move|| {
                     let i = 1;
@@ -166,9 +171,6 @@ impl Application for ScreenshotGrabber {
                 return window::request_user_attention(Some(UserAttention::Informational));
                 //return window::resize(Size::new(800, 800));
             },
-            Message::ScreenState(value) => { self.screen_state = value;
-                return Command::none();
-            },
             Message::TogglerToggledAutosave(value) => { self.toggler_value_autosave = value;
                 return Command::none();
             },
@@ -196,7 +198,7 @@ impl Application for ScreenshotGrabber {
     fn view(&self) -> Element<Message> {
         return container(
             match self.page_state {
-                PagesState::Home => home(self.screen_state),
+                PagesState::Home => home(self.screen_result.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone() ),
                 PagesState::Modify => modify(),
             })
