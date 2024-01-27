@@ -1,5 +1,8 @@
 use arboard::{Clipboard, ImageData};
-use image::RgbaImage;
+use image::{ImageFormat, RgbaImage};
+use std::path::PathBuf;
+use log::error;
+use env_logger;
 
 #[derive(Clone)]
 pub struct ImageHandler {
@@ -34,6 +37,33 @@ impl ImageHandler {
             bytes: (&self.buffer).into(),
         })
 
+    }
+
+    pub fn save_image(image: RgbaImage, path: PathBuf) {
+
+        let format : ImageFormat;
+        env_logger::init();
+
+        match path.clone().extension(){
+            Some(ext) => {
+                match ext.to_str().unwrap() {
+                    "png" => format = ImageFormat::Png,
+                    "jpg" => format = ImageFormat::Jpeg,
+                    "jpeg" => format = ImageFormat::Jpeg,
+                    "gif" => format = ImageFormat::Gif,
+                    _ => {
+                        error!("Format not supported.");
+                        return;
+                    }
+                }
+            }
+            None => {
+                error!("Format not supported.");
+                return;
+            }
+        }
+
+        image.save_with_format(path,format);
     }
 
 }

@@ -1,4 +1,5 @@
 use std::{io, thread, time};
+use std::path::PathBuf;
 use multi_platform_screen_grabbing_utility::hotkeys::{HotkeyListener,HotkeyConfig};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
@@ -23,8 +24,9 @@ fn main() -> io::Result<()> {
                    Ok(res) => {
                        let img = res.convert().unwrap();
                            //img.save(format!("monitorasd.png"));
-                        let imghndl : ImageHandler = img.into();
+                        let imghndl : ImageHandler = img.clone().into();
                         imghndl.to_clipboard();
+                        ImageHandler::save_image(img,PathBuf::from("img.jpg"));
                        let region = res.screen.capture_area(300,300,300,300).unwrap();
                             region.save(format!("region.png"));
                        println!("Width:{} Height:{}", res.screen.display_info.width,res.screen.display_info.height);
