@@ -142,10 +142,17 @@ impl Application for ScreenshotGrabber {
         match message {
             Message::NewScreenshotButton => {
                 let sender = self.sender.clone();
+                let screen_result = self.screen_result.clone();
+                let timer_vaule = self.timer_value.clone();
                 self.subscription_state = SubscriptionState::Screenshotting;
                 thread::spawn(move || {
-                    thread::sleep(time::Duration::from_millis(500)); //Aspetto che si chiuda l'applicazione e faccio lo screen
-                    let screen_result;
+                    if timer_vaule == 0 {
+                        thread::sleep(time::Duration::from_millis(500)); //Aspetto che si chiuda l'applicazione e faccio lo screen
+                    }
+                    else{
+                        thread::sleep(time::Duration::from_secs(timer_vaule as u64)); //Aspetto che si chiuda l'applicazione e faccio lo screen
+                    }
+                    let screen_result ;
                     match Screenshot::capture_first() {
                         Ok(res) => {
                             println!("Screen ok");
@@ -181,10 +188,10 @@ impl Application for ScreenshotGrabber {
             Message::ScreenDone(image) => {
                 self.screen_result = image;
                 self.subscription_state=SubscriptionState::None;
-                //return window::move_to(-7, -7);
-                //return window::maximize(true);
+                let (tx, rx) = mpsc::unbounded_channel::<Option<RgbaImage>>();
+                self.sender= RefCell::new(Some(tx));
+                self.receiver= RefCell::new(Some(rx));
                 return window::request_user_attention(Some(UserAttention::Informational));
-                //return window::resize(Size::new(800, 800));
             }
             Message::TogglerToggledAutosave(value) => {
                 self.toggler_value_autosave = value;
@@ -245,7 +252,7 @@ impl Application for ScreenshotGrabber {
                     "channel",
                     self.receiver.take(),
                     move |mut receiver| async move {
-                        let image = receiver.as_mut().unwrap().recv().await.unwrap();
+                        let mut image = receiver.as_mut().unwrap().recv().await.unwrap();
                         return (Message::ScreenDone(image), receiver);
                     },
                 );
