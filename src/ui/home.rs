@@ -1,32 +1,4 @@
 use iced::{Element, Length, theme, Alignment};
-<<<<<<< HEAD
-use iced::widget::{button, row, text};
-use crate::{Message, ScreenState};
-
-pub fn home(screenshot_state: ScreenState) -> Element<'static, Message>{
-    let row;
-    if screenshot_state == ScreenState::ScreenTrue{
-        row = row![
-                        button(text("New Screenshot").width(Length::Fill).size(20)).style(theme::Button::Primary).on_press(Message::NewScreenshotButton),
-                        button(text("Settings").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::SettingsButton),
-                        button(text("Modify").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::ModifyButton)
-                ]
-            .spacing(20)
-            .align_items(Alignment::Center)
-            .into();
-    } else {
-        row = row![
-                        button(text("New Screenshot").width(Length::Fill).size(20)).style(theme::Button::Primary).on_press(Message::NewScreenshotButton),
-                        button(text("Settings").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::SettingsButton),
-                ]
-            .spacing(20)
-            .align_items(Alignment::Center)
-            .into();
-    }
-    return row;
-}
-
-=======
 use iced::widget::{button, row, text, container, column};
 use crate::{Message};
 use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container};
@@ -93,4 +65,3 @@ pub fn home(screen_result: Option<RgbaImage>, toggler_value_autosave: bool) -> E
 
         return container(content).height(Length::Fill).center_y().center_x().into();
 }
->>>>>>> thread_lorenzo
