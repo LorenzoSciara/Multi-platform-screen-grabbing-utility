@@ -416,15 +416,9 @@ checksum = "bf43edc576402991846b093a7ca18a3477e0ef9c588cde84964b5d3e43016642"
 
 [[package]]
 name = "core-foundation"
-<<<<<<< HEAD
-version = "0.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f"
-=======
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57d24c7a13c43e870e37c1556b74555437870a04514f7685f5b354e090567171"
->>>>>>> thread_lorenzo
 dependencies = [
  "core-foundation-sys 0.7.0",
  "libc",
@@ -442,11 +436,6 @@ dependencies = [
 
 [[package]]
 name = "core-foundation-sys"
-<<<<<<< HEAD
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
-=======
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3a71ab494c0b5b860bdc8407ae08978052417070c2ced38573a9157ad75b8ac"
@@ -480,7 +469,6 @@ dependencies = [
  "foreign-types 0.3.2",
  "libc",
 ]
->>>>>>> thread_lorenzo
 
 [[package]]
 name = "core-graphics"
@@ -549,8 +537,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -576,7 +562,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "248e3bacc7dc6baa3b21e405ee045c3047101a49145e7e9eca583ab4c2ca5345"
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "crunchy"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -675,8 +660,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "exr"
 version = "1.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -693,7 +676,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "fast-srgb8"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -728,8 +710,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "flume"
 version = "0.10.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -743,7 +723,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "fontdb"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -793,11 +772,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
-<<<<<<< HEAD
-name = "futures"
-version = "0.3.29"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-=======
 name = "foreign-types-shared"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -807,7 +781,6 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "futures"
 version = "0.3.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
->>>>>>> thread_lorenzo
 checksum = "da0290714b38af9b4a7b094b8a37086d1b4e61f2df9122c3cad2577669145335"
 dependencies = [
  "futures-channel",
@@ -914,11 +887,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-name = "getrandom"
-version = "0.2.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-=======
 name = "gethostname"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -932,7 +900,6 @@ dependencies = [
 name = "getrandom"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
->>>>>>> thread_lorenzo
 checksum = "fe9006bed769170c11f845cf00c7c1e9092aeb3f268e007c3e760ac68008070f"
 dependencies = [
  "cfg-if",
@@ -1281,8 +1248,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "image"
 version = "0.24.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1301,7 +1266,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1360,8 +1324,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "jpeg-decoder"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1371,7 +1333,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "js-sys"
 version = "0.3.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1411,8 +1372,6 @@ name = "libc"
 version = "0.2.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
-<<<<<<< HEAD
-=======
 
 [[package]]
 name = "libdbus-sys"
@@ -1423,7 +1382,6 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
->>>>>>> thread_lorenzo
 
 [[package]]
 name = "libloading"
@@ -1463,8 +1421,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "libwayshot"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1481,7 +1437,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "lock_api"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1609,12 +1564,9 @@ dependencies = [
  "arboard",
  "chrono",
  "iced",
-<<<<<<< HEAD
-=======
  "image",
  "rdev",
  "screenshots",
->>>>>>> thread_lorenzo
  "tokio",
 ]
 
@@ -2086,8 +2038,6 @@ name = "profiling"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1de09527cd2ea2c2d59fb6c2f8c1ab8c71709ed9d1b6d60b0e1c9fbb6fdcb33c"
-<<<<<<< HEAD
-=======
 
 [[package]]
 name = "qoi"
@@ -2097,7 +2047,6 @@ checksum = "7f6d64c71eb498fe9eae14ce4ec935c555749aef511cca85b5568910d6e48001"
 dependencies = [
  "bytemuck",
 ]
->>>>>>> thread_lorenzo
 
 [[package]]
 name = "quick-xml"
@@ -2175,8 +2124,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2ff9a1f06a88b01621b7ae906ef0211290d1c8a168a15542486a8f61c0833b9"
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "rayon"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2213,7 +2160,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2533,8 +2479,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.39",
-<<<<<<< HEAD
-=======
 ]
 
 [[package]]
@@ -2546,7 +2490,6 @@ dependencies = [
  "flate2",
  "jpeg-decoder",
  "weezl",
->>>>>>> thread_lorenzo
 ]
 
 [[package]]
@@ -3003,15 +2946,12 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "weezl"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
 
 [[package]]
->>>>>>> thread_lorenzo
 name = "wgpu"
 version = "0.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3523,12 +3463,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-name = "xcursor"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a0ccd7b4a5345edfcd0c3535718a4e9ff7798ffc536bb5b5a0e26ff84732911"
-=======
 name = "x11rb-protocol"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3536,7 +3470,6 @@ checksum = "82d6c3f9a0fb6701fab8f6cea9b0c0bd5d6876f1f89f7fada07e558077c344bc"
 dependencies = [
  "nix 0.26.4",
 ]
->>>>>>> thread_lorenzo
 
 [[package]]
 name = "xcb"
