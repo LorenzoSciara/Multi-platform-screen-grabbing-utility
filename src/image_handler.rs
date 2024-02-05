@@ -114,7 +114,6 @@ impl ImageHandler {
             }
         }
 
-        //image.save_with_format(path,format);
         Self::encode(self.clone(),path.to_string_lossy().to_string(),format);
     }
 
