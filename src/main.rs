@@ -71,8 +71,7 @@ use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use image::RgbaImage;
 use screenshots::{Screen};
-use std::path::PathBuf;
-use image::ImageFormat::Gif;
+use rfd::FileDialog;
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
@@ -182,8 +181,8 @@ impl Application for ScreenshotGrabber {
             page_state: PagesState::Home,
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
-            toggler_value_clipboard: true,
-            toggler_value_autosave: true,
+            toggler_value_clipboard: false,
+            toggler_value_autosave: false,
             radio_value_monitor: Choice::A,
             radio_value_format: Choice::A,
             timer_value: 0,
@@ -243,8 +242,41 @@ impl Application for ScreenshotGrabber {
             }
 
             Message::SaveButton => {
+
+                match self.screen_result.clone() {
+                    Some(img) => {
+                        let current_time = Utc::now();
+                        let current_time_string = format!(
+                            "Screenshot_{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
+                            current_time.year(),
+                            current_time.month(),
+                            current_time.day(),
+                            current_time.hour(),
+                            current_time.minute(),
+                            current_time.second()
+                        );
+                        let path = std::env::current_dir().unwrap();
+                        let imghndl: ImageHandler = img.clone().into();
+                        let res = rfd::FileDialog::new()
+                            .set_file_name(current_time_string)
+                            .set_directory(&path)
+                            .add_filter("png",&["png"])
+                            .add_filter("jpg",&["jpg"])
+                            .add_filter("gif",&["gif"])
+                            .save_file();
+                        match res {
+                            Some(save_path) => {
+                                ImageHandler::save_image(&imghndl,save_path);
+                            }
+                            None => ()
+                        }
+                    }
+                        None => ()
+                }
+
                 return Command::none();
             }
+
             Message::ScreenDone(image) => {
                 self.screen_result = image;
                 self.subscription_state=SubscriptionState::None;
