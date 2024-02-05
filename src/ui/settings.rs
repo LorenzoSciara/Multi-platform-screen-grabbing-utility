@@ -111,7 +111,6 @@ fn settings_box(settings_text: String, settings_container: Container<'static, Me
         .align_y(alignment::Vertical::Center);
     return container;
 }
-
 pub fn settings(toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value:i32, shortcut_value:String, path_value:String, total_monitor_number: usize) -> Element<'static, Message> {
     let undobutton = button(text("← Home").width(Length::Fill).size(20))
         .on_press(Message::HomeButton)
