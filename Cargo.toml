@@ -3,10 +3,9 @@ name = "multi-platform-screen-grabbing-utility"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-iced = "0.10.0"
+iced = { version = "0.10.0", features = ["advanced", "image"] }
+tokio = { version = "1", features = ["full"] }
 rdev = "0.5.3"
 image = "0.24.8"
 screenshots = "0.8.7"
@@ -14,3 +13,4 @@ arboard = "3.3.0"
 notifica = "3.0.2"
 log = "0.4.20"
 env_logger = "0.11.1"
+chrono = "0.4"
