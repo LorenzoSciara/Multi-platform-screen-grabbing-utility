@@ -2,7 +2,7 @@ use std::fmt::format;
 use iced::{Element, Length, alignment, theme, Event};
 use iced::widget::{button, row, text, column, container, Row};
 use crate::{Message, Choice};
-use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container};
+use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container, text_input};
 
 fn select_container(select_value: String, select_type: String) -> Container<'static, Message> {
     let text_box = Container::new(text(select_value).size(20).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
@@ -10,8 +10,14 @@ fn select_container(select_value: String, select_type: String) -> Container<'sta
         .height(30)
         .width(160)
         .padding([0,0,0,20]);
+    let text_input = TextInput::new(
+        &mut self.input_state,
+        "Inserisci qualcosa...",
+        &self.input_value,
+        Message::TextInputChanged,
+    )
     let select_button = button(if select_type == "shortcut" { "Set Now!" } else { "Chose Path" } )
-        .on_press( if select_type == "shortcut" { Message::Shortcut("Ctrl + s".to_string()) } else { Message::Path("C:/user/Desktop".to_string()) });
+        .on_press( if select_type == "shortcut" { Message::TextInputShortcut("Ctrl + s".to_string()) } else { Message::TextInputPath("C:/user/Desktop".to_string()) });
     let select_button_container = Container::new(select_button).padding([0,0,0,20]);
     let setting_input = row![text_box, select_button_container];
     let container = Container::new(setting_input);
@@ -43,44 +49,24 @@ fn radio_container_format(radio_value: Choice) -> Container<'static, Message> {
 }
 
 fn radio_container_monitor(radio_value: Choice, total_monitor_number: usize) -> Container<'static, Message> {
-    let tmn = if total_monitor_number>6 {6}else{total_monitor_number};
-    let choices = vec![("1", Choice::A), ("2", Choice::B), ("3", Choice::C), ("4", Choice::D), ("5", Choice::E), ("All", Choice::F), ];
-    let b : Vec<Event> = Vec::new();
-    let events = Row::with_children(
-        b
-            .iter()
-            .map(|choice| text(format!("{choice:?}")).size(40))
-            .map(Element::from),
-    );
-
-
-    return container;
-}
-
-
-
-fn radio_container_monitor1(radio_value: Choice, radio_type: String, total_monitor_number: usize) -> Container<'static, Message> {
     let selected_choice = Some(radio_value);
-    let a = Radio::new(
-        if radio_type=="monitor" {"Display 1"} else {".jpg"},
-        Choice::A,
-        selected_choice,
-        if radio_type=="monitor" {Message::RadioSelectedMonitor} else {Message::RadioSelectedFormat});
-    let A = Container::new(a).padding([0,10]);
-    let b = Radio::new(
-        if radio_type=="monitor" {"Display 2"} else {".png"},
-        Choice::B,
-        selected_choice,
-        if radio_type=="monitor" {Message::RadioSelectedMonitor} else {Message::RadioSelectedFormat});
-    let B = Container::new(b).padding([0,10]);
-    let c = Radio::new(
-        if radio_type=="monitor" {"All Display"} else {".gif"},
-        Choice::C,
-        selected_choice,
-        if radio_type=="monitor" {Message::RadioSelectedMonitor} else {Message::RadioSelectedFormat});
-    let C = Container::new(c).padding([0,10]);
-    let setting_input = row![A, B, C];
-    let container = Container::new(setting_input);
+    let tmn = if total_monitor_number > 5 { 5 } else { total_monitor_number };
+    let mut radio_row = Row::new().spacing(20);
+    for i in 1..=tmn {
+        let label = format!("{}", i);
+        let value = match i {
+            1 => Choice::A,
+            2 => Choice::B,
+            3 => Choice::C,
+            4 => Choice::D,
+            5 => Choice::E,
+            _ => Choice::A,
+        };
+        radio_row = radio_row.push(Radio::new(&label, value, selected_choice, Message::RadioSelectedMonitor));
+    }
+    radio_row = radio_row.push(Radio::new("All", Choice::F, selected_choice, Message::RadioSelectedMonitor));
+
+    let container = Container::new(radio_row);
     return container;
 }
 
