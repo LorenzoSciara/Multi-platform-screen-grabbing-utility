@@ -1,7 +1,6 @@
 use arboard::{Clipboard, ImageData};
 use std::path::PathBuf;
 use log::error;
-use env_logger;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -93,7 +92,6 @@ impl ImageHandler {
     pub fn save_image(&self, path: PathBuf) {
 
         let format : ImageFormat;
-        env_logger::init();
 
         match path.clone().extension(){
             Some(ext) => {

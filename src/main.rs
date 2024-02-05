@@ -72,6 +72,7 @@ use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use image::RgbaImage;
 use screenshots::{Screen};
 use rfd::FileDialog;
+use env_logger;
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
@@ -177,12 +178,13 @@ impl Application for ScreenshotGrabber {
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
         let (tx, rx) = mpsc::unbounded_channel::<Option<RgbaImage>>();
+        env_logger::init();
         return (ScreenshotGrabber {
             page_state: PagesState::Home,
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
             toggler_value_clipboard: false,
-            toggler_value_autosave: false,
+            toggler_value_autosave: true,
             radio_value_monitor: Choice::A,
             radio_value_format: Choice::A,
             timer_value: 0,
