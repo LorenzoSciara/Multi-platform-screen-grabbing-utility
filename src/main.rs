@@ -64,11 +64,15 @@ use tokio::sync::mpsc;
 use std::cell::RefCell;
 use std::time::{Duration};
 use chrono::{Datelike, prelude::*};
+use iced::advanced::svg::Data::Path;
 use iced::window::{screenshot, UserAttention};
 use multi_platform_screen_grabbing_utility::hotkeys::{HotkeyListener, HotkeyConfig};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
+use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use image::RgbaImage;
 use screenshots::{Screen};
+use std::path::PathBuf;
+use image::ImageFormat::Gif;
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
@@ -260,12 +264,11 @@ impl Application for ScreenshotGrabber {
                                 current_time.minute(),
                                 current_time.second()
                             );
-                            let save_result = img.save(format!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format()));
+
+                            let imghndl : ImageHandler = img.clone().into();
+                            ImageHandler::save_image(&imghndl,format!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format()).into());
+
                             println!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format());
-                            match save_result {
-                                Ok(_) => (),
-                                Err(e) => {println!("{}",e)}
-                            };
                         }
                         None => ()
                     }
