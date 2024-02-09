@@ -53,11 +53,11 @@ mod ui {
 use crate::ui::home::home;
 use crate::ui::modify::modify;
 use crate::ui::settings::settings;
-use iced::{executor};
+use iced::{executor, mouse, Point};
 use iced::widget::{container};
 use iced::window;
 use iced::event;
-use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size, Event};
+use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size, Event, Rectangle};
 use std::{io, thread, time};
 use std::alloc::System;
 use tokio::sync::mpsc;
@@ -73,6 +73,8 @@ use image::RgbaImage;
 use screenshots::{Screen};
 use rfd::FileDialog;
 use env_logger;
+use once_cell::sync::Lazy;
+use image::Rgba;
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
@@ -102,6 +104,8 @@ struct ScreenshotGrabber {
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
     event: Event,
+    draw_free: bool,
+    draw_mouse_pressed: bool,
 }
 
 #[derive(
@@ -169,7 +173,11 @@ pub enum Message {
     Shortcut(String),
     Path(String),
     EventOccurred(Event),
+    ModifyImage(Option<Rectangle>, Option<Event>),
+    DrawFreeButton,
 }
+
+static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
 
 impl Application for ScreenshotGrabber {
     type Executor = executor::Default;
@@ -195,6 +203,8 @@ impl Application for ScreenshotGrabber {
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
             event: Event::Window(window::Event::Focused),
+            draw_free: false,
+            draw_mouse_pressed: false,
         }, Command::none());
     }
 
@@ -210,8 +220,8 @@ impl Application for ScreenshotGrabber {
                 let timer_vaule = self.timer_value.clone();
                 self.subscription_state = SubscriptionState::Screenshotting;
                 thread::spawn(move || {
-                    thread::sleep(time::Duration::from_millis((timer_vaule*1000 + 500) as u64)); //Aspetto che si chiuda l'applicazione e faccio lo screen
-                    let screen_result ;
+                    thread::sleep(time::Duration::from_millis((timer_vaule * 1000 + 500) as u64)); //Aspetto che si chiuda l'applicazione e faccio lo screen
+                    let screen_result;
                     match Screenshot::capture_first() {
                         Ok(res) => {
                             println!("Screen ok");
@@ -234,7 +244,7 @@ impl Application for ScreenshotGrabber {
             }
             Message::ModifyButton => {
                 self.page_state = PagesState::Modify;
-                return window::resize(Size::new(700, 500));
+                return window::resize(Size::new(1000, 500));
             }
             Message::HomeButton => {
                 self.page_state = PagesState::Home;
@@ -246,7 +256,6 @@ impl Application for ScreenshotGrabber {
             }
 
             Message::SaveButton => {
-
                 match self.screen_result.clone() {
                     Some(img) => {
                         let current_time = Utc::now();
@@ -264,18 +273,18 @@ impl Application for ScreenshotGrabber {
                         let res = rfd::FileDialog::new()
                             .set_file_name(current_time_string)
                             .set_directory(&path)
-                            .add_filter("png",&["png"])
-                            .add_filter("jpg",&["jpg"])
-                            .add_filter("gif",&["gif"])
+                            .add_filter("png", &["png"])
+                            .add_filter("jpg", &["jpg"])
+                            .add_filter("gif", &["gif"])
                             .save_file();
                         match res {
                             Some(save_path) => {
-                                ImageHandler::save_image(&imghndl,save_path);
+                                ImageHandler::save_image(&imghndl, save_path);
                             }
                             None => ()
                         }
                     }
-                        None => ()
+                    None => ()
                 }
 
                 return Command::none();
@@ -283,11 +292,11 @@ impl Application for ScreenshotGrabber {
 
             Message::ScreenDone(image) => {
                 self.screen_result = image;
-                self.subscription_state=SubscriptionState::None;
+                self.subscription_state = SubscriptionState::None;
                 let (tx, rx) = mpsc::unbounded_channel::<Option<RgbaImage>>();
-                self.sender= RefCell::new(Some(tx));
-                self.receiver= RefCell::new(Some(rx));
-                if self.toggler_value_autosave{
+                self.sender = RefCell::new(Some(tx));
+                self.receiver = RefCell::new(Some(rx));
+                if self.toggler_value_autosave {
                     match self.screen_result.clone() {
                         Some(img) => {
                             let current_time = Utc::now();
@@ -301,8 +310,8 @@ impl Application for ScreenshotGrabber {
                                 current_time.second()
                             );
 
-                            let imghndl : ImageHandler = img.clone().into();
-                            ImageHandler::save_image(&imghndl,format!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format()).into());
+                            let imghndl: ImageHandler = img.clone().into();
+                            ImageHandler::save_image(&imghndl, format!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format()).into());
 
                             println!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format());
                         }
@@ -342,10 +351,41 @@ impl Application for ScreenshotGrabber {
             }
             Message::EventOccurred(event) => {
                 self.event = event.clone();
-                println!("{0:?}", self.event);
-                if self.screen_result.is_some() && event == Event::Window(window::Event::Focused){
+                //println!("{0:?}", self.event);
+                if self.screen_result.is_some() && event == Event::Window(window::Event::Focused) {
                     return window::resize(Size::new(1000, 500));
                 }
+                if self.page_state == PagesState::Modify{
+                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds|{Message::ModifyImage(bounds, Some(event.clone()))});
+                }
+                return Command::none();
+            }
+            Message::ModifyImage(screenshot_bounds, event) => {
+                //println!("{0:?}", screenshot_bounds);
+                //println!("{0:?}", event);
+                if self.draw_free == true {
+                    let color = Rgba([255, 0, 0, 0]);
+                    let screen = self.screen_result.clone().unwrap();
+                    match event{
+                        Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
+                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone(){
+                                let position = ((position.x.clone()+screenshot_bounds.unwrap().x.clone()) as i32, (position.y.clone()+screenshot_bounds.unwrap().y.clone()) as i32);
+                                self.screen_result = Some(imageproc::drawing::draw_filled_circle(&screen, position, 10, color));
+                            }
+                        }
+                        Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
+                            self.draw_mouse_pressed = true;
+                        }
+                        Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
+                            self.draw_mouse_pressed = false;
+                        }
+                        _ => {}
+                    };
+                }
+                return Command::none();
+            }
+            Message::DrawFreeButton => {
+                self.draw_free=!self.draw_free.clone();
                 return Command::none();
             }
         }
@@ -356,7 +396,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone()),
-                PagesState::Modify => modify(self.screen_result.clone(), self.event.clone()),
+                PagesState::Modify => modify(self.screen_result.clone(), self.draw_free.clone()),
             })
             .width(Length::Fill)
             .padding(25)
@@ -373,7 +413,7 @@ impl Application for ScreenshotGrabber {
                     self.receiver.take(),
                     move |mut receiver| async move {
                         let mut image = None;
-                        while image == None{
+                        while image == None {
                             image = match receiver.as_mut().unwrap().recv().await {
                                 Some(img) => img,
                                 None => None

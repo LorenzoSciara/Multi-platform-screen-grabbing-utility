@@ -1952,6 +1952,7 @@ dependencies = [
  "imageproc",
  "log",
  "notifica",
+ "once_cell",
  "rdev",
  "rfd",
  "screenshots",
