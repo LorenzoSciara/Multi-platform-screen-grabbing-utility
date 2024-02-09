@@ -14,7 +14,6 @@ impl HotkeyListener {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
         let pressed_keys = Arc::new(Mutex::new(HashSet::new()));
-
         HotkeyListener {
             sender: tx,
             receiver: rx,
@@ -25,7 +24,6 @@ impl HotkeyListener {
     pub fn start(&self) {
         let sender = self.sender.clone();
         let pressed_keys = self.pressed_keys.clone();
-
         thread::spawn(move || {
             if let Err(error) = listen(move |event| {
                 match event.event_type {
@@ -59,14 +57,12 @@ pub struct HotkeyConfig {
 
 impl HotkeyConfig {
     pub fn parse_hotkey(modifier_arg: &str, key_arg: &str) -> Result<HotkeyConfig, &'static str> {
-
         let modifier = match modifier_arg.to_lowercase().as_str() {
             "control" => Key::ControlLeft,
             "shift" => Key::ShiftLeft,
             "alt" => Key::Alt,
             _ => return Err("Il primo argomento deve essere 'Control' o 'Shift'"),
         };
-
         let key = match key_arg.to_uppercase().as_str() {
             "A" => Key::KeyA, "B" => Key::KeyB, "C" => Key::KeyC, "D" => Key::KeyD, "E" => Key::KeyE,
             "F" => Key::KeyF, "G" => Key::KeyG, "H" => Key::KeyH, "I" => Key::KeyI, "J" => Key::KeyJ,
@@ -76,7 +72,6 @@ impl HotkeyConfig {
             "Z" => Key::KeyZ,
             _ => return Err("Il secondo argomento deve essere una lettera"),
         };
-
         Ok(HotkeyConfig { modifier, key })
     }
 }

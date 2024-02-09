@@ -6,7 +6,6 @@ use iced::widget::image as img;
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use image::RgbaImage;
 
-
 pub fn home(screen_result: Option<RgbaImage>, toggler_value_autosave: bool) -> Element<'static, Message> {
     let mut controlRow:Element<'static, Message> = row![].into();
     let mut imageRow:Element<'static, Message> = row![].into();

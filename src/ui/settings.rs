@@ -1,28 +1,38 @@
 use std::fmt::format;
 use iced::{Element, Length, alignment, theme, Event};
-use iced::widget::{button, row, text, column, container, Row};
+use iced::advanced::Widget;
+use iced::widget::{button, row, text, column, container, Row, TextInput};
 use crate::{Message, Choice};
 use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container, text_input};
+fn shortcut_input(shortcut_value: String, input_value: String ) -> Container<'static, Message> {
 
-fn select_container(select_value: String, select_type: String) -> Container<'static, Message> {
-    let text_box = Container::new(text(select_value).size(20).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
-        .style(style::text_container)
-        .height(30)
-        .width(160)
-        .padding([0,0,0,20]);
-    let text_input = TextInput::new(
-        &mut self.input_state,
-        "Inserisci qualcosa...",
-        &self.input_value,
-        Message::TextInputChanged,
-    )
-    let select_button = button(if select_type == "shortcut" { "Set Now!" } else { "Chose Path" } )
-        .on_press( if select_type == "shortcut" { Message::TextInputShortcut("Ctrl + s".to_string()) } else { Message::TextInputPath("C:/user/Desktop".to_string()) });
-    let select_button_container = Container::new(select_button).padding([0,0,0,20]);
-    let setting_input = row![text_box, select_button_container];
+    // let text_box = Container::new(text(select_value).size(20).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
+    //     .style(style::text_container)
+    //     .height(30)
+    //     .width(160)
+    //     .padding([0,0,0,20]);
+    // let select_button = button(if select_type == "shortcut" { "Set Now!" } else { "Chose Path" } )
+    //     .on_press( if select_type == "shortcut" { Message::Shortcut("Ctrl + s".to_string()) } else { Message::Path("C:/user/Desktop".to_string()) });
+    // let select_button_container = Container::new(select_button).padding([0,0,0,20]);
+    // let setting_input = row![text_box, select_button_container];
+    // let container = Container::new(setting_input);
+    // return container;
+
+    let setting_input = row![];
     let container = Container::new(setting_input);
     return container;
+}
 
+fn path_input(path_value: String, input_value: String ) -> Container<'static, Message> {
+    let input : TextInput<'static, Message> = TextInput::new(
+        if path_value == "" {"Insert a custom path"} else {&path_value},
+        &input_value
+    ).on_input(Message::InputChanged);
+    let container_input = Container::new(input).width(Length::Fixed(160.0)).height(Length::Fixed(35.0));
+    let select_button = button("Choose Path!" ).on_press( Message::InputPath(input_value) );
+    let setting_input = row![container_input, select_button ].spacing(20);
+    let container = Container::new(setting_input);
+    return container;
 }
 fn timer_container(timer_value: i32)-> Container<'static, Message> {
     let increment_button = button(text("+").width(Length::Fixed(25.0)).height(Length::Fixed(25.0)).size(25).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
@@ -97,7 +107,7 @@ fn settings_box(settings_text: String, settings_container: Container<'static, Me
         .align_y(alignment::Vertical::Center);
     return container;
 }
-pub fn settings(toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value:i32, shortcut_value:String, path_value:String, total_monitor_number: usize) -> Element<'static, Message> {
+pub fn settings(toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value:i32, shortcut_value:String, path_value:String, total_monitor_number: usize, input_value: String) -> Element<'static, Message> {
     let undobutton = button(text("← Home").width(Length::Fill).size(20))
         .on_press(Message::HomeButton)
         .style(theme::Button::Destructive)
@@ -111,10 +121,10 @@ pub fn settings(toggler_value_autosave: bool, toggler_value_clipboard: bool, rad
     let container1 = settings_box("Save the screenshot automatically".to_string(), toggler_container(toggler_value_autosave, "autosave".to_string()));
     let container2 = settings_box("Copy the screenshot into the clipdoard automatically".to_string(), toggler_container(toggler_value_clipboard, "clipboard".to_string()));
     let container3 = settings_box("Select the monitor in which to screenshot".to_string(), radio_container_monitor(radio_value_monitor,  total_monitor_number));
-    let container4 = settings_box("Set a shortcut to make the screenshots".to_string(), select_container(shortcut_value, "shortcut".to_string()));
+    let container4 = settings_box("Set a shortcut to make the screenshots".to_string(), shortcut_input(shortcut_value, input_value.clone()));
     let container5 = settings_box("Select the screenshot format".to_string(), radio_container_format(radio_value_format));
     let container6 = settings_box("Set a timer before the screenshot".to_string(), timer_container(timer_value));
-    let container7 = settings_box("Change the path where you save the screenshot".to_string(), select_container(path_value, "path".to_string()));
+    let container7 = settings_box("Change the path where you save the screenshot".to_string(), path_input(path_value,input_value.clone()));
 
     let content: Element<_> = column![ controls, spacev, container1, container2, container3, container4, container5, container6, container7 ]
         .spacing(20)
