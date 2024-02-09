@@ -101,6 +101,7 @@ struct ScreenshotGrabber {
     screen_result: Option<RgbaImage>,
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
+    event: Event,
 }
 
 #[derive(
@@ -193,6 +194,7 @@ impl Application for ScreenshotGrabber {
             screen_result: None,
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
+            event: Event::Window(window::Event::Focused),
         }, Command::none());
     }
 
@@ -339,7 +341,8 @@ impl Application for ScreenshotGrabber {
                 return Command::none();
             }
             Message::EventOccurred(event) => {
-                println!("{event:?}");
+                self.event = event.clone();
+                println!("{0:?}", self.event);
                 if self.screen_result.is_some() && event == Event::Window(window::Event::Focused){
                     return window::resize(Size::new(1000, 500));
                 }
@@ -353,7 +356,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone()),
-                PagesState::Modify => modify(),
+                PagesState::Modify => modify(self.screen_result.clone(), self.event.clone()),
             })
             .width(Length::Fill)
             .padding(25)
