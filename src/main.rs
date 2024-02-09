@@ -270,7 +270,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone()),
-                PagesState::Modify => modify(),
+                PagesState::Modify => modify(self.screen_result.clone()),
             })
             .width(Length::Fill)
             .padding(25)
