@@ -1,8 +1,9 @@
 use iced::{Element, Alignment, Length, theme};
 use iced::widget::{button, row, text, container, column};
 use crate::{Message};
-use image::RgbaImage;
+use image::{RgbaImage, Rgba};
 use iced::widget::image as img;
+use imageproc;
 
 pub fn modify(screen_result: Option<RgbaImage>) -> Element<'static, Message> {
     match screen_result {
@@ -14,11 +15,12 @@ pub fn modify(screen_result: Option<RgbaImage>) -> Element<'static, Message> {
                 .spacing(20)
                 .align_items(Alignment::Center)
                 .into();
+            let color = Rgba([255, 0, 0, 0]);
             let imageRow:Element<'static, Message> = row![
                        img(img::Handle::from_pixels(
                             screen.width(),
                             screen.height(),
-                            screen.as_raw().clone(),
+                            imageproc::drawing::draw_hollow_circle(&screen, (370, 250), 100, color).as_raw().clone(),
                         ))
                 ]
                 .spacing(20)

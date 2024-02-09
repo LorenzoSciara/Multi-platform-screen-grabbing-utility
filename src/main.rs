@@ -133,7 +133,7 @@ impl Application for ScreenshotGrabber {
             sender: RefCell::new(Some(tx)),
             receiver: RefCell::new(Some(rx)),
             toggler_value_clipboard: true,
-            toggler_value_autosave: true,
+            toggler_value_autosave: false,
             radio_value_monitor: Choice::A,
             radio_value_format: Choice::A,
             timer_value: 0,
