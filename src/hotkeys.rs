@@ -1,80 +1,47 @@
-use rdev::{listen, EventType, Key};
-use std::collections::HashSet;
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use iced::{Event};
+use iced::keyboard;
 
-pub struct HotkeyListener {
-    sender: Sender<HashSet<Key>>,
-    receiver: Receiver<HashSet<Key>>,
-    pressed_keys: Arc<Mutex<HashSet<Key>>>,
-}
-
-impl HotkeyListener {
-    pub fn new() -> Self {
-        let (tx, rx) = mpsc::channel();
-        let pressed_keys = Arc::new(Mutex::new(HashSet::new()));
-        HotkeyListener {
-            sender: tx,
-            receiver: rx,
-            pressed_keys,
+pub fn check_shortcut_event(event: &Event) -> String {
+    if let Event::Keyboard(keyboard::Event::KeyPressed { key_code, modifiers }) = event {
+        if modifiers.control() || modifiers.alt() || modifiers.shift() {
+            if let Some(character) = get_character_from_keycode(*key_code) {
+                if character.is_ascii_alphabetic() {
+                    let formatted_shortcut = format!("{:#?} + {}", modifiers, character);
+                    return formatted_shortcut;
+                }
+            }
         }
     }
-
-    pub fn start(&self) {
-        let sender = self.sender.clone();
-        let pressed_keys = self.pressed_keys.clone();
-        thread::spawn(move || {
-            if let Err(error) = listen(move |event| {
-                match event.event_type {
-                    EventType::KeyPress(key) => {
-                        let mut keys = pressed_keys.lock().unwrap();
-                        keys.insert(key);
-                        sender.send(keys.clone()).unwrap();
-                    }
-                    EventType::KeyRelease(key) => {
-                        let mut keys = pressed_keys.lock().unwrap();
-                        keys.remove(&key);
-                        sender.send(keys.clone()).unwrap();
-                    }
-                    _ => {}
-                }
-            }) {
-                eprintln!("Errore durante l'ascolto: {:?}", error);
-            }
-        });
-    }
-
-    pub fn listen(&self) -> Option<HashSet<Key>> {
-        self.receiver.try_recv().ok()
-    }
+    return "".to_string();
 }
-
-pub struct HotkeyConfig {
-    pub modifier: Key,
-    pub key: Key,
-}
-
-impl HotkeyConfig {
-    pub fn parse_hotkey(modifier_arg: &str, key_arg: &str) -> Result<HotkeyConfig, &'static str> {
-        let modifier = match modifier_arg.to_lowercase().as_str() {
-            "control" => Key::ControlLeft,
-            "shift" => Key::ShiftLeft,
-            "alt" => Key::Alt,
-            _ => return Err("Il primo argomento deve essere 'Control' o 'Shift'"),
-        };
-        let key = match key_arg.to_uppercase().as_str() {
-            "A" => Key::KeyA, "B" => Key::KeyB, "C" => Key::KeyC, "D" => Key::KeyD, "E" => Key::KeyE,
-            "F" => Key::KeyF, "G" => Key::KeyG, "H" => Key::KeyH, "I" => Key::KeyI, "J" => Key::KeyJ,
-            "K" => Key::KeyK, "L" => Key::KeyL, "M" => Key::KeyM, "N" => Key::KeyN, "O" => Key::KeyO,
-            "P" => Key::KeyP, "Q" => Key::KeyQ, "R" => Key::KeyR, "S" => Key::KeyS, "T" => Key::KeyT,
-            "U" => Key::KeyU, "V" => Key::KeyV, "W" => Key::KeyW, "X" => Key::KeyX, "Y" => Key::KeyY,
-            "Z" => Key::KeyZ,
-            _ => return Err("Il secondo argomento deve essere una lettera"),
-        };
-        Ok(HotkeyConfig { modifier, key })
+pub fn get_character_from_keycode(key_code: keyboard::KeyCode) -> Option<char> {
+    match key_code {
+        keyboard::KeyCode::A => Some('a'),
+        keyboard::KeyCode::B => Some('b'),
+        keyboard::KeyCode::C => Some('c'),
+        keyboard::KeyCode::D => Some('d'),
+        keyboard::KeyCode::E => Some('e'),
+        keyboard::KeyCode::F => Some('f'),
+        keyboard::KeyCode::G => Some('g'),
+        keyboard::KeyCode::H => Some('h'),
+        keyboard::KeyCode::I => Some('i'),
+        keyboard::KeyCode::J => Some('j'),
+        keyboard::KeyCode::K => Some('k'),
+        keyboard::KeyCode::L => Some('l'),
+        keyboard::KeyCode::M => Some('m'),
+        keyboard::KeyCode::N => Some('n'),
+        keyboard::KeyCode::O => Some('o'),
+        keyboard::KeyCode::P => Some('p'),
+        keyboard::KeyCode::Q => Some('q'),
+        keyboard::KeyCode::R => Some('r'),
+        keyboard::KeyCode::S => Some('s'),
+        keyboard::KeyCode::T => Some('t'),
+        keyboard::KeyCode::U => Some('u'),
+        keyboard::KeyCode::V => Some('v'),
+        keyboard::KeyCode::W => Some('w'),
+        keyboard::KeyCode::X => Some('x'),
+        keyboard::KeyCode::Y => Some('y'),
+        keyboard::KeyCode::Z => Some('z'),
+        _ => None,
     }
 }
-
-
-

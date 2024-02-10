@@ -8,23 +8,27 @@ use crate::ui::home::home;
 use crate::ui::modify::modify;
 use crate::ui::settings::settings;
 use iced::{executor};
-use iced::widget::{container, text_input};
+use iced::widget::{container};
 use iced::window;
 use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size, Event};
 use std::{io, thread, time};
 use std::alloc::System;
 use tokio::sync::mpsc;
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::time::{Duration};
 use chrono::{Datelike, prelude::*};
 use iced::window::{screenshot, UserAttention};
-use multi_platform_screen_grabbing_utility::hotkeys::{HotkeyListener, HotkeyConfig};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use image::RgbaImage;
 use screenshots::{Screen};
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use rfd::FileDialog;
 use env_logger;
+use iced::keyboard;
+use iced::keyboard::Modifiers;
+use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, get_character_from_keycode};
+
 
 pub fn main() -> iced::Result {
     let settings = Settings {
@@ -49,7 +53,7 @@ struct ScreenshotGrabber {
     timer_value: i32,
     shortcut_value: String,
     path_value: String,
-    input_value: String,
+    shortcut_listen: bool,
     screen_result: Option<RgbaImage>,
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
@@ -112,10 +116,9 @@ pub enum Message {
     RadioSelectedMonitor(Choice),
     RadioSelectedFormat(Choice),
     TimerChange(i32),
-    InputShortcut(String),
+    ShortcutListen(bool),
     InputPath(String),
     EventOccurred(Event),
-    InputChanged(String),
 }
 
 impl Application for ScreenshotGrabber {
@@ -135,9 +138,9 @@ impl Application for ScreenshotGrabber {
             radio_value_monitor: Choice::A,
             radio_value_format: Choice::A,
             timer_value: 0,
-            shortcut_value: "".to_string(),
+            shortcut_value: "CTRL + s".to_string(),
+            shortcut_listen: false,
             path_value: "".to_string(),
-            input_value: String::new(),
             screen_result: None,
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
@@ -292,20 +295,34 @@ impl Application for ScreenshotGrabber {
                 self.timer_value = value;
                 return Command::none();
             }
-            Message::InputShortcut(value) => {
-                self.shortcut_value = value;
+            Message::ShortcutListen(value) => {
+                self.shortcut_listen = value;
                 return Command::none();
             }
             Message::InputPath(value) => {
-                self.path_value = value;
-                return Command::none();
-            }
-            Message::InputChanged(value) => {
-                self.input_value = value;
+                let res = rfd::FileDialog::new().pick_folder();
+                match res {
+                    Some(path) => {
+                        self.path_value = path.display().to_string();
+                    }
+                    None => ()
+                }
                 return Command::none();
             }
             Message::EventOccurred(event) => {
                 println!("{event:?}");
+
+                if check_shortcut_event(&event) == self.shortcut_value {
+                    return Command::perform(async { Message::NewScreenshotButton }, |msg| msg);
+                }
+
+                if self.shortcut_listen {
+                    if check_shortcut_event(&event) != "".to_string() {
+                        self.shortcut_value = check_shortcut_event(&event);
+                        self.shortcut_listen = false;
+                    }
+                }
+
                 if self.screen_result.is_some() && event == Event::Window(window::Event::Focused) {
                     return window::resize(Size::new(1000, 500));
                 }
@@ -318,7 +335,7 @@ impl Application for ScreenshotGrabber {
         return container(
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
-                PagesState::Settings => settings(self.toggler_value_autosave.clone(), self.toggler_value_clipboard.clone(), self.radio_value_monitor, self.radio_value_format, self.timer_value.clone(), self.shortcut_value.clone(), self.path_value.clone(), self.total_monitor_number.clone(), self.input_value.clone()),
+                PagesState::Settings => settings(self.toggler_value_autosave.clone(), self.toggler_value_clipboard.clone(), self.radio_value_monitor, self.radio_value_format, self.timer_value.clone(), self.shortcut_value.clone(), self.path_value.clone(), self.total_monitor_number.clone(), self.shortcut_listen.clone()),
                 PagesState::Modify => modify(),
             })
             .width(Length::Fill)
