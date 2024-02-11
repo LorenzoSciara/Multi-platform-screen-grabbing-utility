@@ -29,7 +29,18 @@ use iced::keyboard;
 use iced::keyboard::Modifiers;
 use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, get_character_from_keycode};
 
-
+fn generate_current_time_string() -> String {
+    let current_time = Utc::now();
+    format!(
+        "Screenshot_{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
+        current_time.year(),
+        current_time.month(),
+        current_time.day(),
+        current_time.hour(),
+        current_time.minute(),
+        current_time.second()
+    )
+}
 pub fn main() -> iced::Result {
     let settings = Settings {
         window: window::Settings {
@@ -207,38 +218,27 @@ impl Application for ScreenshotGrabber {
                 }
             }
             Message::SaveButton => {
-                match self.screen_result.clone() {
-                    Some(img) => {
-                        let current_time = Utc::now();
-                        let current_time_string = format!(
-                            "Screenshot_{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
-                            current_time.year(),
-                            current_time.month(),
-                            current_time.day(),
-                            current_time.hour(),
-                            current_time.minute(),
-                            current_time.second()
-                        );
-                        let path = std::env::current_dir().unwrap();
-                        let imghndl: ImageHandler = img.clone().into();
-                        let res = rfd::FileDialog::new()
-                            .set_file_name(current_time_string)
-                            .set_directory(&path)
-                            .add_filter("png", &["png"])
-                            .add_filter("jpg", &["jpg"])
-                            .add_filter("gif", &["gif"])
-                            .save_file();
-                        match res {
-                            Some(save_path) => {
-                                ImageHandler::save_image(&imghndl, save_path);
-                            }
-                            None => ()
+                if let Some(img) = self.screen_result.clone() {
+                    let current_time_string = generate_current_time_string();
+                    let path = std::env::current_dir().unwrap();
+                    let imghndl: ImageHandler = img.clone().into();
+                    let res = rfd::FileDialog::new()
+                        .set_file_name(current_time_string)
+                        .set_directory(&path)
+                        .add_filter("png", &["png"])
+                        .add_filter("jpg", &["jpg"])
+                        .add_filter("gif", &["gif"])
+                        .save_file();
+                    match res {
+                        Some(save_path) => {
+                            ImageHandler::save_image(&imghndl, save_path);
                         }
+                        None => ()
                     }
-                    None => ()
                 }
                 return Command::none();
             }
+
             Message::ScreenDone(image) => {
                 self.screen_result = image;
                 self.subscription_state = SubscriptionState::None;
@@ -257,16 +257,7 @@ impl Application for ScreenshotGrabber {
                 if self.toggler_value_autosave {
                     match self.screen_result.clone() {
                         Some(img) => {
-                            let current_time = Utc::now();
-                            let current_time_string = format!(
-                                "Screenshot_{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
-                                current_time.year(),
-                                current_time.month(),
-                                current_time.day(),
-                                current_time.hour(),
-                                current_time.minute(),
-                                current_time.second()
-                            );
+                            let current_time_string = generate_current_time_string();
                             let imghndl: ImageHandler = img.clone().into();
                             ImageHandler::save_image(&imghndl, format!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format()).into());
                         }
@@ -311,18 +302,15 @@ impl Application for ScreenshotGrabber {
             }
             Message::EventOccurred(event) => {
                 println!("{event:?}");
-
                 if check_shortcut_event(&event) == self.shortcut_value {
                     return Command::perform(async { Message::NewScreenshotButton }, |msg| msg);
                 }
-
                 if self.shortcut_listen {
                     if check_shortcut_event(&event) != "".to_string() {
                         self.shortcut_value = check_shortcut_event(&event);
                         self.shortcut_listen = false;
                     }
                 }
-
                 if self.screen_result.is_some() && event == Event::Window(window::Event::Focused) {
                     return window::resize(Size::new(1000, 500));
                 }
