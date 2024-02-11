@@ -1955,6 +1955,7 @@ dependencies = [
  "once_cell",
  "rdev",
  "rfd",
+ "rusttype",
  "screenshots",
  "tokio",
 ]

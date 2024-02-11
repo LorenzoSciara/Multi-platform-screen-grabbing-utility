@@ -75,6 +75,7 @@ use rfd::FileDialog;
 use env_logger;
 use once_cell::sync::Lazy;
 use image::Rgba;
+use rusttype::{Font, Scale};
 use crate::Draw::{FreeHand, Nothing};
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
@@ -109,6 +110,8 @@ struct ScreenshotGrabber {
     draw_mouse_pressed: bool,
     draw_figure_press: (i32, i32),
     draw_figure_relesed: (i32, i32),
+    draw_text_input: String,
+    screen_result_backup: Option<RgbaImage>,
 }
 
 #[derive(
@@ -167,6 +170,7 @@ pub enum Draw {
     FreeHand,
     Circle,
     Rectangle,
+    Text,
     Nothing,
 }
 
@@ -189,6 +193,9 @@ pub enum Message {
     ModifyImage(Option<Rectangle>, Option<Event>),
     DrawFreeButton,
     DrawCircleButton,
+    DrawTextButton,
+    DrawTextInput(String),
+    DrawClearButton,
 }
 
 static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
@@ -221,6 +228,8 @@ impl Application for ScreenshotGrabber {
             draw_mouse_pressed: false,
             draw_figure_press: (0, 0),
             draw_figure_relesed: (0, 0),
+            draw_text_input: "".to_string(),
+            screen_result_backup: None,
         }, Command::none());
     }
 
@@ -244,6 +253,7 @@ impl Application for ScreenshotGrabber {
                             let img = res.convert().unwrap();
                             //img.save(format!("screen_file.png")); //qua come lo usava fra il result di save() non è usato non va bene
                             screen_result = Some(img);
+
                         }
                         Err(err) => {
                             screen_result = None;
@@ -308,6 +318,7 @@ impl Application for ScreenshotGrabber {
 
             Message::ScreenDone(image) => {
                 self.screen_result = image;
+                self.screen_result_backup = self.screen_result.clone();
                 self.subscription_state = SubscriptionState::None;
                 let (tx, rx) = mpsc::unbounded_channel::<Option<RgbaImage>>();
                 self.sender = RefCell::new(Some(tx));
@@ -371,60 +382,73 @@ impl Application for ScreenshotGrabber {
                 if self.screen_result.is_some() && event == Event::Window(window::Event::Focused) {
                     return window::resize(Size::new(1000, 500));
                 }
-                if self.page_state == PagesState::Modify{
-                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds|{Message::ModifyImage(bounds, Some(event.clone()))});
+                if self.page_state == PagesState::Modify {
+                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds| { Message::ModifyImage(bounds, Some(event.clone())) });
                 }
                 return Command::none();
             }
             Message::ModifyImage(screenshot_bounds, event) => {
-                //println!("{0:?}", screenshot_bounds);
-                //println!("{0:?}", event);
-                if self.draw == FreeHand {
-                    let color = Rgba([255, 0, 0, 0]);
-                    let screen = self.screen_result.clone().unwrap();
-                    match event{
-                        Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
-                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone(){
-                                let position = ((position.x.clone()+screenshot_bounds.unwrap().x.clone()) as i32, (position.y.clone()+screenshot_bounds.unwrap().y.clone()) as i32);
-                                self.screen_result = Some(imageproc::drawing::draw_filled_circle(&screen, position, 10, color));
+                match self.draw {
+                    FreeHand => {
+                        let color = Rgba([255, 0, 0, 0]);
+                        let screen = self.screen_result.clone().unwrap();
+                        match event {
+                            Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
+                                if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() {
+                                    let position = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 3.2) as i32);
+                                    self.screen_result = Some(imageproc::drawing::draw_filled_circle(&screen, position, 5, color));
+                                }
                             }
-                        }
-                        Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
-                            self.draw_mouse_pressed = true;
-                        }
-                        Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
-                            self.draw_mouse_pressed = false;
-                        }
-                        _ => {}
-                    };
-                }
-                else if self.draw == Draw::Circle {
-                    let color = Rgba([255, 0, 0, 0]);
-                    let screen = self.screen_result.clone().unwrap();
-                    match event{
-                        Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
-                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press==(0, 0){
-                                self.draw_figure_press = ((position.x.clone()+screenshot_bounds.unwrap().x.clone()) as i32, (position.y.clone()+screenshot_bounds.unwrap().y.clone()) as i32);
+                            Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
+                                self.draw_mouse_pressed = true;
                             }
-                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press!=(0, 0){
-                                self.draw_figure_relesed = ((position.x.clone()+screenshot_bounds.unwrap().x.clone()) as i32, (position.y.clone()+screenshot_bounds.unwrap().y.clone()) as i32);
+                            Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
+                                self.draw_mouse_pressed = false;
                             }
-                            if screenshot_bounds.unwrap().contains(position) && !self.draw_mouse_pressed.clone() && self.draw_figure_press!=(0, 0){
-
+                            _ => {}
+                        };
+                    }
+                    Draw::Circle => {
+                        let color = Rgba([255, 0, 0, 0]);
+                        let screen = self.screen_result.clone().unwrap();
+                        match event {
+                            Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
+                                if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press == (0, 0) {
+                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * 3.2) as i32);
+                                }
+                                if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press != (0, 0) {
+                                    self.draw_figure_relesed = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * 3.2) as i32);
+                                }
                             }
-                        }
-                        Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
-                            self.draw_mouse_pressed = true;
-                        }
-                        Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
-                            //println!("{0:?}", self)
-                            self.draw_mouse_pressed = false;
-                            self.screen_result = Some(imageproc::drawing::draw_hollow_circle(&screen, self.draw_figure_press.clone(), (((self.draw_figure_relesed.0.clone()-self.draw_figure_press.0.clone()).pow(2)+(self.draw_figure_relesed.1.clone()-self.draw_figure_press.1.clone()).pow(2))as f64).sqrt() as i32, color));
-                            self.draw_figure_press = (0, 0);
-                            self.draw_figure_relesed = (0, 0);
-                        }
-                        _ => {}
-                    };
+                            Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
+                                self.draw_mouse_pressed = true;
+                            }
+                            Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
+                                self.draw_mouse_pressed = false;
+                                self.screen_result = Some(imageproc::drawing::draw_hollow_circle(&screen, self.draw_figure_press.clone(), (((self.draw_figure_relesed.0.clone() - self.draw_figure_press.0.clone()).pow(2) + (self.draw_figure_relesed.1.clone() - self.draw_figure_press.1.clone()).pow(2)) as f64).sqrt() as i32, color));
+                                self.draw_figure_press = (0, 0);
+                                self.draw_figure_relesed = (0, 0);
+                            }
+                            _ => {}
+                        };
+                    }
+                    Draw::Text =>{
+                        let color = Rgba([255, 0, 0, 0]);
+                        let screen = self.screen_result.clone().unwrap();
+                        match event {
+                            Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
+                                if screenshot_bounds.unwrap().contains(position) {
+                                    self.draw_figure_press = (position.clone().x as i32, position.clone().y as i32);
+                                }
+                            }
+                            Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
+                                self.screen_result = Some(imageproc::drawing::draw_text(&screen, color, (self.draw_figure_press.0.clone() as f32 *1.75) as i32, (self.draw_figure_press.1.clone() as f32 *1.35) as i32, Scale{x: 24.8, y: 24.8},  &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
+                                self.draw_figure_press = (0, 0);
+                            }
+                            _ => {}
+                        };
+                    }
+                    _ => {}
                 }
                 return Command::none();
             }
@@ -444,6 +468,23 @@ impl Application for ScreenshotGrabber {
                 }
                 return Command::none();
             }
+            Message::DrawTextButton => {
+                if self.draw == Draw::Text {
+                    self.draw = Draw::Nothing;
+                    self.draw_text_input = "".to_string();
+                } else {
+                    self.draw = Draw::Text;
+                }
+                return Command::none();
+            }
+            Message::DrawTextInput(value) => {
+                self.draw_text_input = value;
+                return Command::none();
+            }
+            Message::DrawClearButton => {
+                self.screen_result = self.screen_result_backup.clone();
+                return Command::none();
+            }
         }
     }
 
@@ -452,7 +493,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone()),
-                PagesState::Modify => modify(self.screen_result.clone(), self.draw.clone()),
+                PagesState::Modify => modify(self.screen_result.clone(), self.draw.clone(), self.draw_text_input.clone(), self.screen_result_backup.clone()),
             })
             .width(Length::Fill)
             .padding(25)
