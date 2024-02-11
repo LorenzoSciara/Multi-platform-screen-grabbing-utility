@@ -75,6 +75,7 @@ use rfd::FileDialog;
 use env_logger;
 use once_cell::sync::Lazy;
 use image::Rgba;
+use crate::Draw::{FreeHand, Nothing};
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
@@ -104,8 +105,10 @@ struct ScreenshotGrabber {
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
     event: Event,
-    draw_free: bool,
+    draw: Draw,
     draw_mouse_pressed: bool,
+    draw_figure_press: (i32, i32),
+    draw_figure_relesed: (i32, i32),
 }
 
 #[derive(
@@ -157,6 +160,16 @@ impl Choice {
     }
 }
 
+#[derive(
+Debug, Clone, Copy, PartialEq, Eq
+)]
+pub enum Draw {
+    FreeHand,
+    Circle,
+    Rectangle,
+    Nothing,
+}
+
 #[derive(Debug, Clone)]
 pub enum Message {
     SettingsButton,
@@ -175,6 +188,7 @@ pub enum Message {
     EventOccurred(Event),
     ModifyImage(Option<Rectangle>, Option<Event>),
     DrawFreeButton,
+    DrawCircleButton,
 }
 
 static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
@@ -203,8 +217,10 @@ impl Application for ScreenshotGrabber {
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
             event: Event::Window(window::Event::Focused),
-            draw_free: false,
+            draw: Nothing,
             draw_mouse_pressed: false,
+            draw_figure_press: (0, 0),
+            draw_figure_relesed: (0, 0),
         }, Command::none());
     }
 
@@ -363,7 +379,7 @@ impl Application for ScreenshotGrabber {
             Message::ModifyImage(screenshot_bounds, event) => {
                 //println!("{0:?}", screenshot_bounds);
                 //println!("{0:?}", event);
-                if self.draw_free == true {
+                if self.draw == FreeHand {
                     let color = Rgba([255, 0, 0, 0]);
                     let screen = self.screen_result.clone().unwrap();
                     match event{
@@ -382,10 +398,50 @@ impl Application for ScreenshotGrabber {
                         _ => {}
                     };
                 }
+                else if self.draw == Draw::Circle {
+                    let color = Rgba([255, 0, 0, 0]);
+                    let screen = self.screen_result.clone().unwrap();
+                    match event{
+                        Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
+                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press==(0, 0){
+                                self.draw_figure_press = ((position.x.clone()+screenshot_bounds.unwrap().x.clone()) as i32, (position.y.clone()+screenshot_bounds.unwrap().y.clone()) as i32);
+                            }
+                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press!=(0, 0){
+                                self.draw_figure_relesed = ((position.x.clone()+screenshot_bounds.unwrap().x.clone()) as i32, (position.y.clone()+screenshot_bounds.unwrap().y.clone()) as i32);
+                            }
+                            if screenshot_bounds.unwrap().contains(position) && !self.draw_mouse_pressed.clone() && self.draw_figure_press!=(0, 0){
+
+                            }
+                        }
+                        Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
+                            self.draw_mouse_pressed = true;
+                        }
+                        Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
+                            //println!("{0:?}", self)
+                            self.draw_mouse_pressed = false;
+                            self.screen_result = Some(imageproc::drawing::draw_hollow_circle(&screen, self.draw_figure_press.clone(), (((self.draw_figure_relesed.0.clone()-self.draw_figure_press.0.clone()).pow(2)+(self.draw_figure_relesed.1.clone()-self.draw_figure_press.1.clone()).pow(2))as f64).sqrt() as i32, color));
+                            self.draw_figure_press = (0, 0);
+                            self.draw_figure_relesed = (0, 0);
+                        }
+                        _ => {}
+                    };
+                }
                 return Command::none();
             }
             Message::DrawFreeButton => {
-                self.draw_free=!self.draw_free.clone();
+                if self.draw == Draw::FreeHand {
+                    self.draw = Draw::Nothing;
+                } else {
+                    self.draw = Draw::FreeHand;
+                }
+                return Command::none();
+            }
+            Message::DrawCircleButton => {
+                if self.draw == Draw::Circle {
+                    self.draw = Draw::Nothing;
+                } else {
+                    self.draw = Draw::Circle;
+                }
                 return Command::none();
             }
         }
@@ -396,7 +452,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone()),
-                PagesState::Modify => modify(self.screen_result.clone(), self.draw_free.clone()),
+                PagesState::Modify => modify(self.screen_result.clone(), self.draw.clone()),
             })
             .width(Length::Fill)
             .padding(25)
