@@ -1,9 +1,7 @@
-use std::fmt::format;
-use iced::{Element, Length, alignment, theme, Event};
-use iced::advanced::Widget;
-use iced::widget::{button, row, text, column, container, Row, TextInput};
+use iced::{Element, Length, alignment, theme};
+use iced::widget::{button, row, text, column, container, Row};
 use crate::{Message, Choice};
-use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container, text_input};
+use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container};
 
 fn shortcut_input(shortcut_value: String, shortcut_listen: bool) -> Container<'static, Message> {
     let text_box;
@@ -28,14 +26,13 @@ fn shortcut_input(shortcut_value: String, shortcut_listen: bool) -> Container<'s
 
 fn path_input(path_value: String) -> Container<'static, Message> {
     let path_len = path_value.len();
-
     let text_size = if path_len > 50 { 11 } else if path_len > 47 { 12 } else if path_len > 44 { 13 } else if path_len > 41 { 14 } else if path_len > 48 { 15 } else if path_len > 35 { 16 } else if path_len > 32 { 17 } else { 18 };
     let text_box = Container::new(text(path_value.clone()).size(text_size).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
         .style(style::text_container)
         .height(30)
         .width(350)
         .padding([5, 10]);
-    let select_button = button("Change path").on_press(Message::InputPath(path_value.clone()));
+    let select_button = button("Change path").on_press(Message::InputPath);
     let setting_input = row![text_box, select_button ].spacing(20);
     let container = Container::new(setting_input);
     return container;
@@ -82,7 +79,6 @@ fn radio_container_monitor(radio_value: Choice, total_monitor_number: usize) -> 
         radio_row = radio_row.push(Radio::new(&label, value, selected_choice, Message::RadioSelectedMonitor));
     }
     radio_row = radio_row.push(Radio::new("All", Choice::F, selected_choice, Message::RadioSelectedMonitor));
-
     let container = Container::new(radio_row);
     return container;
 }
@@ -154,7 +150,6 @@ mod style {
 
     pub fn settings_container(theme: &Theme) -> container::Appearance {
         let palette = theme.extended_palette();
-
         container::Appearance {
             text_color: Some(palette.background.strong.text),
             background: Some(Color::from_rgb(0.0 / 255.0, 203.0 / 255.0, 247.0 / 255.0).into()),
@@ -167,7 +162,6 @@ mod style {
 
     pub fn text_container(theme: &Theme) -> container::Appearance {
         let palette = theme.extended_palette();
-
         container::Appearance {
             text_color: Some(palette.background.strong.text),
             background: Some(Color::from_rgb(87.0 / 255.0, 115.0 / 255.0, 240.0 / 255.0).into()),

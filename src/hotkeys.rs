@@ -1,5 +1,7 @@
+use chrono::Utc;
 use iced::{Event};
 use iced::keyboard;
+use chrono::{Datelike, Timelike};
 
 pub fn check_shortcut_event(event: &Event) -> String {
     if let Event::Keyboard(keyboard::Event::KeyPressed { key_code, modifiers }) = event {
@@ -14,6 +16,7 @@ pub fn check_shortcut_event(event: &Event) -> String {
     }
     return "".to_string();
 }
+
 pub fn get_character_from_keycode(key_code: keyboard::KeyCode) -> Option<char> {
     match key_code {
         keyboard::KeyCode::A => Some('a'),
@@ -44,4 +47,17 @@ pub fn get_character_from_keycode(key_code: keyboard::KeyCode) -> Option<char> {
         keyboard::KeyCode::Z => Some('z'),
         _ => None,
     }
+}
+
+pub fn generate_current_time_string() -> String {
+    let current_time = Utc::now();
+    format!(
+        "Screenshot_{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
+        current_time.year(),
+        current_time.month(),
+        current_time.day(),
+        current_time.hour(),
+        current_time.minute(),
+        current_time.second()
+    )
 }

@@ -1,9 +1,4 @@
-mod ui {
-    pub mod home;
-    pub mod modify;
-    pub mod settings;
-}
-
+mod ui { pub mod home; pub mod modify; pub mod settings; }
 use crate::ui::home::home;
 use crate::ui::modify::modify;
 use crate::ui::settings::settings;
@@ -11,37 +6,16 @@ use iced::{executor};
 use iced::widget::{container};
 use iced::window;
 use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size, Event};
-use std::{io, thread, time};
-use std::alloc::System;
+use std::{thread, time};
 use tokio::sync::mpsc;
 use std::cell::RefCell;
-use std::path::PathBuf;
-use std::time::{Duration};
 use arboard::Clipboard;
-use chrono::{Datelike, prelude::*};
-use iced::window::{screenshot, UserAttention};
+use iced::window::{UserAttention};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use image::RgbaImage;
-use screenshots::{Screen};
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
-use rfd::FileDialog;
-use env_logger;
-use iced::keyboard;
-use iced::keyboard::Modifiers;
-use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, get_character_from_keycode};
-
-fn generate_current_time_string() -> String {
-    let current_time = Utc::now();
-    format!(
-        "Screenshot_{:04}_{:02}_{:02}_{:02}_{:02}_{:02}",
-        current_time.year(),
-        current_time.month(),
-        current_time.day(),
-        current_time.hour(),
-        current_time.minute(),
-        current_time.second()
-    )
-}
+use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, generate_current_time_string};
+use multi_platform_screen_grabbing_utility::choice::Choice;
 
 pub fn main() -> iced::Result {
     let settings = Settings {
@@ -68,7 +42,7 @@ struct ScreenshotGrabber {
     path_value: String,
     shortcut_listen: bool,
     screen_result: Vec<Option<RgbaImage>>,
-    screen_selected: Option<RgbaImage>,
+    screen_selected: usize,
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
 }
@@ -86,37 +60,6 @@ pub enum SubscriptionState {
     None,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Choice {
-    A,
-    B,
-    C,
-    D,
-    E,
-    F,
-}
-
-impl Choice {
-    fn to_numeric(&self) -> u32 {
-        match self {
-            Choice::A => 1,
-            Choice::B => 2,
-            Choice::C => 3,
-            Choice::D => 4,
-            Choice::E => 5,
-            Choice::F => 6,
-        }
-    }
-    fn to_format(&self) -> String {
-        match self {
-            Choice::A => ".jpg".to_string(),
-            Choice::B => ".png".to_string(),
-            Choice::C => ".gif".to_string(),
-            _ => "".to_string(),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Message {
     SettingsButton,
@@ -131,8 +74,9 @@ pub enum Message {
     RadioSelectedFormat(Choice),
     TimerChange(i32),
     ShortcutListen(bool),
-    InputPath(String),
+    InputPath,
     EventOccurred(Event),
+    ChangeSelectedScreen(usize)
 }
 
 impl Application for ScreenshotGrabber {
@@ -156,7 +100,7 @@ impl Application for ScreenshotGrabber {
             shortcut_listen: false,
             path_value: "".to_string(),
             screen_result: Vec::new(),
-            screen_selected: None,
+            screen_selected: 0,
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
         }, Command::none());
@@ -215,36 +159,42 @@ impl Application for ScreenshotGrabber {
             }
             Message::HomeButton => {
                 self.page_state = PagesState::Home;
-                if self.screen_selected == None {
+                if self.screen_result.is_empty() {
                     return window::resize(Size::new(350, 120));
                 } else {
                     return Command::none();
                 }
             }
             Message::SaveButton => {
-                if let Some(img) = self.screen_selected.clone() {
-                    let current_time_string = generate_current_time_string();
-                    let path = std::env::current_dir().unwrap();
-                    let imghndl: ImageHandler = img.clone().into();
-                    let res = rfd::FileDialog::new()
-                        .set_file_name(current_time_string)
-                        .set_directory(&path)
-                        .add_filter("png", &["png"])
-                        .add_filter("jpg", &["jpg"])
-                        .add_filter("gif", &["gif"])
-                        .save_file();
-                    match res {
-                        Some(save_path) => {
-                            ImageHandler::save_image(&imghndl, save_path);
+                if !self.screen_result.is_empty() {
+                    if let Some(img) = self.screen_result[self.screen_selected].clone() {
+                        let current_time_string = generate_current_time_string();
+                        let path = std::env::current_dir().unwrap();
+                        let imghndl: ImageHandler = img.clone().into();
+                        let res = rfd::FileDialog::new()
+                            .set_file_name(current_time_string)
+                            .set_directory(&path)
+                            .add_filter("png", &["png"])
+                            .add_filter("jpg", &["jpg"])
+                            .add_filter("gif", &["gif"])
+                            .save_file();
+                        match res {
+                            Some(save_path) => {
+                                ImageHandler::save_image(&imghndl, save_path);
+                            }
+                            None => ()
                         }
-                        None => ()
                     }
                 }
                 return Command::none();
             }
+            Message::ChangeSelectedScreen(value) => {
+                self.screen_selected = value;
+                return Command::none();
+            }
             Message::ScreenDone(images) => {
                 self.screen_result = images.clone();
-                self.screen_selected = images[0].clone();
+                self.screen_selected = 0;
                 self.subscription_state = SubscriptionState::None;
                 let (tx, rx) = mpsc::unbounded_channel::<Vec<Option<RgbaImage>>>();
                 self.sender = RefCell::new(Some(tx));
@@ -256,7 +206,6 @@ impl Application for ScreenshotGrabber {
                                 match screen {
                                     Some(img) => {
                                         let img_clipboard: ImageHandler = img.clone().into();
-                                        cb.clear();
                                         if let Err(err) = img_clipboard.to_clipboard(&mut cb) {
                                             eprintln!("Error copying image to clipboard: {:?}", err);
                                         }
@@ -309,7 +258,7 @@ impl Application for ScreenshotGrabber {
                 self.shortcut_listen = value;
                 return Command::none();
             }
-            Message::InputPath(value) => {
+            Message::InputPath => {
                 let res = rfd::FileDialog::new().pick_folder();
                 match res {
                     Some(path) => {
@@ -330,8 +279,10 @@ impl Application for ScreenshotGrabber {
                         self.shortcut_listen = false;
                     }
                 }
-                if self.screen_selected.is_some() && event == Event::Window(window::Event::Focused) {
-                    return window::resize(Size::new(1000, 500));
+                if !self.screen_result.is_empty() {
+                    if self.screen_result[self.screen_selected].is_some() && event == Event::Window(window::Event::Focused) {
+                        return window::resize(Size::new(1000, 500));
+                    }
                 }
                 return Command::none();
             }
