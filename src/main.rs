@@ -17,6 +17,7 @@ use tokio::sync::mpsc;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::time::{Duration};
+use arboard::Clipboard;
 use chrono::{Datelike, prelude::*};
 use iced::window::{screenshot, UserAttention};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
@@ -41,6 +42,7 @@ fn generate_current_time_string() -> String {
         current_time.second()
     )
 }
+
 pub fn main() -> iced::Result {
     let settings = Settings {
         window: window::Settings {
@@ -55,8 +57,8 @@ pub fn main() -> iced::Result {
 #[derive()]
 struct ScreenshotGrabber {
     page_state: PagesState,
-    sender: RefCell<Option<mpsc::UnboundedSender<Option<RgbaImage>>>>,
-    receiver: RefCell<Option<mpsc::UnboundedReceiver<Option<RgbaImage>>>>,
+    sender: RefCell<Option<mpsc::UnboundedSender<Vec<Option<RgbaImage>>>>>,
+    receiver: RefCell<Option<mpsc::UnboundedReceiver<Vec<Option<RgbaImage>>>>>,
     toggler_value_clipboard: bool,
     toggler_value_autosave: bool,
     radio_value_monitor: Choice,
@@ -65,7 +67,8 @@ struct ScreenshotGrabber {
     shortcut_value: String,
     path_value: String,
     shortcut_listen: bool,
-    screen_result: Option<RgbaImage>,
+    screen_result: Vec<Option<RgbaImage>>,
+    screen_selected: Option<RgbaImage>,
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
 }
@@ -121,7 +124,7 @@ pub enum Message {
     ModifyButton,
     HomeButton,
     SaveButton,
-    ScreenDone(Option<RgbaImage>),
+    ScreenDone(Vec<Option<RgbaImage>>),
     TogglerToggledAutosave(bool),
     TogglerToggledClipboard(bool),
     RadioSelectedMonitor(Choice),
@@ -139,7 +142,7 @@ impl Application for ScreenshotGrabber {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        let (tx, rx) = mpsc::unbounded_channel::<Option<RgbaImage>>();
+        let (tx, rx) = mpsc::unbounded_channel::<Vec<Option<RgbaImage>>>();
         return (ScreenshotGrabber {
             page_state: PagesState::Home,
             sender: RefCell::new(Some(tx)),
@@ -152,7 +155,8 @@ impl Application for ScreenshotGrabber {
             shortcut_value: "CTRL + s".to_string(),
             shortcut_listen: false,
             path_value: "".to_string(),
-            screen_result: None,
+            screen_result: Vec::new(),
+            screen_selected: None,
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
         }, Command::none());
@@ -171,33 +175,33 @@ impl Application for ScreenshotGrabber {
                 self.subscription_state = SubscriptionState::Screenshotting;
                 thread::spawn(move || {
                     thread::sleep(time::Duration::from_millis((timer_value * 1000 + 500) as u64));
-                    let screen_result;
+                    let mut screen_results = Vec::new();
                     if radio_value_monitor != 6 {
                         match Screenshot::capture_screen(radio_value_monitor - 1) {
                             Ok(res) => {
-                                println!("Screen ok");
                                 let img = res.convert().unwrap();
-                                screen_result = Some(img);
+                                screen_results.push(Some(img));
                             }
                             Err(err) => {
-                                screen_result = None;
-                                eprintln!("Error: {}", err); //gestire l'errore non puo essere un print in console, ma un banner rosso che appare a livello grafico con iced in home.rs
+                                screen_results.push(None);
+                                eprintln!("Error: {}", err);
                             }
                         }
                     } else {
-                        match Screenshot::capture_all() { //TO DO: gestire piu monitor
+                        match Screenshot::capture_all() {
                             Ok(res) => {
-                                println!("Screen ok");
-                                let img = res[0].convert().unwrap();
-                                screen_result = Some(img);
+                                for screen in res {
+                                    let img = screen.convert().unwrap();
+                                    screen_results.push(Some(img));
+                                }
                             }
                             Err(err) => {
-                                screen_result = None;
-                                eprintln!("Error: {}", err); //gestire l'errore non puo essere un print in console, ma un banner rosso che appare a livello grafico con iced in home.rs
+                                screen_results.push(None);
+                                eprintln!("Error: {}", err);
                             }
                         }
                     }
-                    sender.take().as_mut().unwrap().send(screen_result).unwrap();
+                    sender.take().as_mut().unwrap().send(screen_results).unwrap();
                 });
                 return window::minimize(true);
             }
@@ -211,14 +215,14 @@ impl Application for ScreenshotGrabber {
             }
             Message::HomeButton => {
                 self.page_state = PagesState::Home;
-                if self.screen_result == None {
+                if self.screen_selected == None {
                     return window::resize(Size::new(350, 120));
                 } else {
                     return Command::none();
                 }
             }
             Message::SaveButton => {
-                if let Some(img) = self.screen_result.clone() {
+                if let Some(img) = self.screen_selected.clone() {
                     let current_time_string = generate_current_time_string();
                     let path = std::env::current_dir().unwrap();
                     let imghndl: ImageHandler = img.clone().into();
@@ -238,30 +242,45 @@ impl Application for ScreenshotGrabber {
                 }
                 return Command::none();
             }
-
-            Message::ScreenDone(image) => {
-                self.screen_result = image;
+            Message::ScreenDone(images) => {
+                self.screen_result = images.clone();
+                self.screen_selected = images[0].clone();
                 self.subscription_state = SubscriptionState::None;
-                let (tx, rx) = mpsc::unbounded_channel::<Option<RgbaImage>>();
+                let (tx, rx) = mpsc::unbounded_channel::<Vec<Option<RgbaImage>>>();
                 self.sender = RefCell::new(Some(tx));
                 self.receiver = RefCell::new(Some(rx));
                 if self.toggler_value_clipboard {
-                    match self.screen_result.clone() {
-                        Some(img) => {
-                            let img_clipboard: ImageHandler = img.clone().into();
-                            img_clipboard.to_clipboard();
+                    match Clipboard::new() {
+                        Ok(mut cb) => {
+                            for screen in &self.screen_result {
+                                match screen {
+                                    Some(img) => {
+                                        let img_clipboard: ImageHandler = img.clone().into();
+                                        cb.clear();
+                                        if let Err(err) = img_clipboard.to_clipboard(&mut cb) {
+                                            eprintln!("Error copying image to clipboard: {:?}", err);
+                                        }
+                                    }
+                                    None => (),
+                                }
+                            }
                         }
-                        None => ()
+                        Err(err) => {
+                            eprintln!("Error creating clipboard: {:?}", err);
+                        }
                     }
                 }
                 if self.toggler_value_autosave {
-                    match self.screen_result.clone() {
-                        Some(img) => {
-                            let current_time_string = generate_current_time_string();
-                            let imghndl: ImageHandler = img.clone().into();
-                            ImageHandler::save_image(&imghndl, format!("{}{}{}", self.path_value, current_time_string, self.radio_value_format.to_format()).into());
+                    for (index, screen) in self.screen_result.iter().enumerate() {
+                        match screen {
+                            Some(img) => {
+                                let current_time_string = generate_current_time_string();
+                                let filename = format!("{}{}_{}{}", self.path_value, current_time_string, index, self.radio_value_format.to_format());
+                                let imghndl: ImageHandler = img.clone().into();
+                                ImageHandler::save_image(&imghndl, filename.into());
+                            }
+                            None => ()
                         }
-                        None => ()
                     }
                 }
                 return window::request_user_attention(Some(UserAttention::Informational));
@@ -311,7 +330,7 @@ impl Application for ScreenshotGrabber {
                         self.shortcut_listen = false;
                     }
                 }
-                if self.screen_result.is_some() && event == Event::Window(window::Event::Focused) {
+                if self.screen_selected.is_some() && event == Event::Window(window::Event::Focused) {
                     return window::resize(Size::new(1000, 500));
                 }
                 return Command::none();
@@ -322,7 +341,7 @@ impl Application for ScreenshotGrabber {
     fn view(&self) -> Element<Message> {
         return container(
             match self.page_state {
-                PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
+                PagesState::Home => home(self.screen_result.clone(), self.screen_selected.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave.clone(), self.toggler_value_clipboard.clone(), self.radio_value_monitor, self.radio_value_format, self.timer_value.clone(), self.shortcut_value.clone(), self.path_value.clone(), self.total_monitor_number.clone(), self.shortcut_listen.clone()),
                 PagesState::Modify => modify(),
             })
@@ -340,14 +359,18 @@ impl Application for ScreenshotGrabber {
                     "channel",
                     self.receiver.take(),
                     move |mut receiver| async move {
-                        let mut image = None;
-                        while image == None {
-                            image = match receiver.as_mut().unwrap().recv().await {
-                                Some(img) => img,
-                                None => None
+                        let mut images = Vec::new();
+                        while images.is_empty() {
+                            match receiver.as_mut().unwrap().recv().await {
+                                Some(imgs) => {
+                                    for screen in imgs {
+                                        images.push(screen);
+                                    }
+                                }
+                                None => ()
                             };
                         }
-                        return (Message::ScreenDone(image), receiver);
+                        return (Message::ScreenDone(images), receiver);
                     },
                 );
             }

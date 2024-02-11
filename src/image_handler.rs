@@ -71,8 +71,7 @@ impl ImageHandler {
         }
     }
 
-    pub fn to_clipboard(&self) -> Result<(), arboard::Error> {
-        let mut cb = Clipboard::new()?;
+    pub fn to_clipboard(&self, cb: &mut Clipboard) -> Result<(), arboard::Error> {
         match notifica::notify("Screenshot salvato nella clipboard.", "") {
             Ok(_) => {}
             Err(_) => {}
@@ -83,6 +82,7 @@ impl ImageHandler {
             bytes: (&self.buffer).into(),
         })
     }
+
 
     pub fn save_image(&self, path: PathBuf) {
         let format : ImageFormat;

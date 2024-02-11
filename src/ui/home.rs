@@ -6,7 +6,7 @@ use iced::widget::image as img;
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use image::RgbaImage;
 
-pub fn home(screen_result: Option<RgbaImage>, toggler_value_autosave: bool) -> Element<'static, Message> {
+pub fn home(screen_result: Vec<Option<RgbaImage>>, screen_selected: Option<RgbaImage>, toggler_value_autosave: bool) -> Element<'static, Message> {
     let mut controlRow:Element<'static, Message> = row![].into();
     let mut imageRow:Element<'static, Message> = row![].into();
 
@@ -16,7 +16,7 @@ pub fn home(screen_result: Option<RgbaImage>, toggler_value_autosave: bool) -> E
     let save_btn = button(text("Save").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::SaveButton);
 
 
-    match screen_result {
+    match screen_selected {
         Some(screen) => {
             if toggler_value_autosave{
                 controlRow = row![screen_btn, settings_btn, modify_btn ]
