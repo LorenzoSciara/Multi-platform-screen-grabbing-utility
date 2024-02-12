@@ -33,7 +33,7 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, crop: CropMode) -> E
     }   else {
         crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::CropButton);
     }
-    let confirm_crop = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::CropButton);
+    let confirm_crop = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::ConfirmButton);
 
     let mut controlModify:Element<'static, Message> = row![].into();
 
