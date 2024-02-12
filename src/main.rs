@@ -69,13 +69,15 @@ use iced::window::{screenshot, UserAttention};
 use multi_platform_screen_grabbing_utility::hotkeys::{HotkeyListener, HotkeyConfig};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
-use image::RgbaImage;
 use screenshots::{Screen};
 use rfd::FileDialog;
 use env_logger;
 use once_cell::sync::Lazy;
 use image::Rgba;
+use image::{GenericImageView, RgbaImage, SubImage};
+use crate::CropMode::NoCrop;
 use crate::Draw::{FreeHand, Nothing};
+use imageproc::rect::Rect;
 
 pub fn main() -> iced::Result { //Il main non ritorna per permettere la programmazione multithread
 
@@ -105,6 +107,9 @@ struct ScreenshotGrabber {
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
     event: Event,
+    crop: CropMode,
+    crop_start: (i32,i32),
+    crop_end: (i32, i32),
     draw: Draw,
     draw_mouse_pressed: bool,
     draw_figure_press: (i32, i32),
@@ -170,6 +175,15 @@ pub enum Draw {
     Nothing,
 }
 
+#[derive(
+Debug, Clone, Copy, PartialEq, Eq
+)]
+pub enum CropMode {
+    Crop,
+    NoCrop,
+    CropConfirm,
+}
+
 #[derive(Debug, Clone)]
 pub enum Message {
     SettingsButton,
@@ -186,9 +200,11 @@ pub enum Message {
     Shortcut(String),
     Path(String),
     EventOccurred(Event),
+    CropImage(Option<Rectangle>, Option<Event>),
     ModifyImage(Option<Rectangle>, Option<Event>),
     DrawFreeButton,
     DrawCircleButton,
+    CropButton,
 }
 
 static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
@@ -217,6 +233,9 @@ impl Application for ScreenshotGrabber {
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
             event: Event::Window(window::Event::Focused),
+            crop: NoCrop,
+            crop_start: (0, 0),
+            crop_end: (0, 0),
             draw: Nothing,
             draw_mouse_pressed: false,
             draw_figure_press: (0, 0),
@@ -372,7 +391,53 @@ impl Application for ScreenshotGrabber {
                     return window::resize(Size::new(1000, 500));
                 }
                 if self.page_state == PagesState::Modify{
-                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds|{Message::ModifyImage(bounds, Some(event.clone()))});
+                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds|{Message::CropImage(bounds, Some(event.clone()))});
+                }
+                return Command::none();
+            }
+            Message::CropImage(screenshot_bounds, event) => {
+                if self.crop == CropMode::Crop {
+                    let screen = self.screen_result.clone().unwrap();
+                    let color = Rgba([255, 0, 0, 0]);
+                    let mut rect = Rect::at(1, 1).of_size(1, 1);
+                    match event{
+                        Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
+                            //println!("{} {}",position.x,position.y);
+                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start == (0, 0) {
+                                self.crop_start = (((position.x.clone()-screenshot_bounds.unwrap().x.clone())*3.2) as i32, ((position.y.clone()-screenshot_bounds.unwrap().y.clone())*3.2) as i32);
+                            }
+                            if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start != (0, 0) {
+                                self.crop_end = (((position.x.clone()-screenshot_bounds.unwrap().x.clone())*3.2) as i32, ((position.y.clone()-screenshot_bounds.unwrap().y.clone())*3.2) as i32);
+                            }
+                        }
+                        Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
+                            self.draw_mouse_pressed = true;
+                        }
+                        Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
+                            self.draw_mouse_pressed = false;
+                            self.crop = CropMode::CropConfirm;
+                            //println!("x1:{} y1:{} x2:{} y3:{}",self.crop_start.0,self.crop_start.1,self.crop_end.0,self.crop_end.1);
+                            rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size((self.crop_end.0.clone()-self.crop_start.0.clone()) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32);
+                            self.screen_result = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
+                        }
+                        _ => {}
+                    };
+                }
+                return Command::none();
+            }
+            Message::CropButton => {
+                if self.crop == CropMode::NoCrop {
+                    self.crop = CropMode::Crop;
+                }
+                else if self.crop == CropMode::Crop {
+                    self.crop = CropMode::NoCrop;
+                }
+                else if self.crop == CropMode::CropConfirm {
+                    let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view(self.crop_start.0.clone() as u32, self.crop_start.1.clone() as u32, (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32);
+                    self.screen_result = Some(cropped.to_image());
+                    self.crop = CropMode::NoCrop;
+                    self.crop_start = (0,0);
+                    self.crop_end = (0,0);
                 }
                 return Command::none();
             }
@@ -452,7 +517,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave, self.toggler_value_clipboard, self.radio_value_monitor, self.radio_value_format, self.timer_value, self.shortcut_value.clone(), self.path_value.clone()),
-                PagesState::Modify => modify(self.screen_result.clone(), self.draw.clone()),
+                PagesState::Modify => modify(self.screen_result.clone(), self.draw.clone(), self.crop.clone()),
             })
             .width(Length::Fill)
             .padding(25)

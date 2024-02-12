@@ -1,13 +1,13 @@
 use std::any::Any;
 use iced::{Element, Alignment, Length, theme, Event, Color};
 use iced::widget::{button, row, text, container, column};
-use crate::{Draw, Message};
+use crate::{CropMode, Draw, Message};
 use image::{RgbaImage, Rgba};
 use iced::widget::image as img;
 use imageproc;
 use crate::SCREENSHOT_CONTAINER;
 
-pub fn modify(screen_result: Option<RgbaImage>, draw: Draw) -> Element<'static, Message> {
+pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, crop: CropMode) -> Element<'static, Message> {
     let controlRow:Element<'static, Message> = row![
                         button(text("← Home").width(Length::Fill).size(20)).style(theme::Button::Destructive).on_press(Message::HomeButton),
                         button(text("New Screenshot").width(Length::Fill).size(20)).style(theme::Button::Primary).on_press(Message::NewScreenshotButton),
@@ -27,7 +27,23 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw) -> Element<'static, 
     } else {
         circle_draw_button = button(text("circle").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::DrawCircleButton);
     }
-    let controlModify = row![free_draw_button, circle_draw_button].spacing(20);
+    let crop_button;
+    if crop == CropMode::Crop {
+        crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
+    }   else {
+        crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::CropButton);
+    }
+    let confirm_crop = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::CropButton);
+
+    let mut controlModify:Element<'static, Message> = row![].into();
+
+    if crop == CropMode::CropConfirm {
+        controlModify = row![free_draw_button, circle_draw_button,crop_button,confirm_crop].spacing(20).into();
+    }
+    else {
+        controlModify = row![free_draw_button, circle_draw_button,crop_button].spacing(20).into();
+    }
+
     match screen_result {
         Some(screen) => {
             let color = Rgba([255, 0, 0, 0]);
