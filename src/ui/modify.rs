@@ -30,14 +30,13 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, s
     }
 
     let crop_button;
-    if crop == CropMode::Crop {
-        crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
-    }   else if crop == CropMode::NoCrop {
+    if draw == Draw::Crop && crop == CropMode::Crop {
+            crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
+    } else if draw == Draw::Crop && crop == CropMode::CropConfirm {
+            crop_button = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
+    } else {
         crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::CropButton);
-    }   else {
-        crop_button = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
     }
-
     let arrow_draw_button;
     if draw == Draw::Arrow {
         arrow_draw_button = button(text("V arrow").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::DrawArrowButton);
