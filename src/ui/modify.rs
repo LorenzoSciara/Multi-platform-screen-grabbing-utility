@@ -30,19 +30,13 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, crop: CropMode) -> E
     let crop_button;
     if crop == CropMode::Crop {
         crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
-    }   else {
+    }   else if crop == CropMode::NoCrop {
         crop_button = button(text("Crop").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::CropButton);
+    }   else {
+        crop_button = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::CropButton);
     }
-    let confirm_crop = button(text("Confirm").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::ConfirmButton);
 
-    let mut controlModify:Element<'static, Message> = row![].into();
-
-    if crop == CropMode::CropConfirm {
-        controlModify = row![free_draw_button, circle_draw_button,crop_button,confirm_crop].spacing(20).into();
-    }
-    else {
-        controlModify = row![free_draw_button, circle_draw_button,crop_button].spacing(20).into();
-    }
+    let controlModify = row![free_draw_button, circle_draw_button,crop_button].spacing(20);
 
     match screen_result {
         Some(screen) => {

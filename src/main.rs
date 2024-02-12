@@ -205,7 +205,6 @@ pub enum Message {
     DrawFreeButton,
     DrawCircleButton,
     CropButton,
-    ConfirmButton,
 }
 
 static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
@@ -434,12 +433,6 @@ impl Application for ScreenshotGrabber {
                     self.crop = CropMode::NoCrop;
                 }
                 else if self.crop == CropMode::CropConfirm {
-
-                }
-                return Command::none();
-            }
-            Message::ConfirmButton => {
-                if self.crop == CropMode::CropConfirm {
                     let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view(self.crop_start.0.clone() as u32, self.crop_start.1.clone() as u32, (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32);
                     self.screen_result = Some(cropped.to_image());
                     self.crop = CropMode::NoCrop;
