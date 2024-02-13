@@ -494,35 +494,36 @@ impl Application for ScreenshotGrabber {
                             }
                             Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
                                 self.draw_mouse_pressed = false;
-                                self.crop = CropMode::CropConfirm;
                                 //println!("x1:{} y1:{} x2:{} y3:{}",self.crop_start.0,self.crop_start.1,self.crop_end.0,self.crop_end.1);
-
+                                if self.crop != CropMode::CropConfirm {
                                 //Da in alto a sinistra a destra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
-                                    self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
-                                    self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
-                                    rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
-                                }
-                                //Da in alto a destra a sinistra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
-                                    self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
-                                    self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
-                                    rect = Rect::at(self.crop_end.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
-                                }
-                                //Da in basso a destra a sinistra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
-                                    self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
-                                    self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
-                                    rect = Rect::at(self.crop_end.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
-                                }
-                                //Da in basso a sinistra a destra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
-                                    self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
-                                    self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
-                                    rect = Rect::at(self.crop_start.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
-                                }
+                                    if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
+                                        self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
+                                        self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
+                                        rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                    }
+                                    //Da in alto a destra a sinistra
+                                    if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
+                                        self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
+                                        self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
+                                        rect = Rect::at(self.crop_end.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                    }
+                                    //Da in basso a destra a sinistra
+                                    if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
+                                        self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
+                                        self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
+                                        rect = Rect::at(self.crop_end.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                    }
+                                    //Da in basso a sinistra a destra
+                                    if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
+                                        self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
+                                        self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
+                                        rect = Rect::at(self.crop_start.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                    }
 
-                                self.screen_result = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
+                                    self.screen_result = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
+                                }
+                                self.crop = CropMode::CropConfirm;
                             }
                             _ => {}
                         };
