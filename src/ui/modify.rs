@@ -1,12 +1,16 @@
 use std::any::Any;
-use iced::{Element, Alignment, Length, theme, Event, Color, Theme};
-use iced::theme::TextInput;
-use iced::widget::{button, row, text, container, column, text_input, Row, vertical_slider};
+use iced::{Element, Alignment, Length, theme, Event, Color, Theme, Background};
+use iced::theme::{TextInput};
+use iced::widget::{button, row, text, column, text_input, Row, container, vertical_slider, Container};
 use crate::{Draw, Message};
 use image::{RgbaImage, Rgba};
 use iced::widget::image as img;
 use imageproc;
 use crate::SCREENSHOT_CONTAINER;
+
+static mut R: f32 = 0.0;
+static mut G: f32 = 0.0;
+static mut B: f32 = 0.0;
 
 pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, screen_result_backup: Option<RgbaImage>, color_slider_value: u8) -> Element<'static, Message> {
     let controlRow:Element<'static, Message> = row![
@@ -68,9 +72,23 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, s
                 .center_y().center_x()
                 .id(SCREENSHOT_CONTAINER.clone())
                 .style(theme::Container::Box);
-            let verticalSlider = vertical_slider(0..=255, color_slider_value.clone(), Message::DrawColorSlider)
-                .step(1);
-            let imageRow:Element<'static, Message> = row![imageContainer, verticalSlider].spacing(20).into();
+            let color_container;
+            match color_slider_value.clone() {
+                0..=9 => {color_container = Container::new(row![]).style(style::black_container).height(50).width(50);}
+                10..=19 => {color_container = Container::new(row![]).style(style::red_container).height(50).width(50);}
+                20..=29 => {color_container = Container::new(row![]).style(style::orange_container).height(50).width(50);}
+                30..=39 => {color_container = Container::new(row![]).style(style::yellow_container).height(50).width(50);}
+                40..=49 => {color_container = Container::new(row![]).style(style::green_container).height(50).width(50);}
+                50..=59 => {color_container = Container::new(row![]).style(style::blue_container).height(50).width(50);}
+                60..=69 => {color_container = Container::new(row![]).style(style::indigo_container).height(50).width(50);}
+                70..=79 => {color_container = Container::new(row![]).style(style::violet_container).height(50).width(50);}
+                    _ => {color_container = Container::new(row![]).style(style::white_container).height(50).width(50);}
+            }
+            let color_selector:Element<'static, Message> = row![
+                vertical_slider(0..=100, color_slider_value.clone(), Message::DrawColorSlider).step(1),
+                column![text("Color Selector").width(Length::Fill).size(20), color_container ]
+            ].spacing(20).into();
+            let imageRow:Element<'static, Message> = row![ imageContainer, color_selector, ].spacing(20).into();
             //println!("container width -> {0:?}", imageRow.as_widget().width());
             //println!("container height -> {0:?}", imageRow.as_widget().height());
             let content: Element<_> = column![ controlRow, controlModify, imageRow ].spacing(20).into();
@@ -85,6 +103,120 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, s
                 .into();
             let content: Element<_> = column![ controlRow, imageRow ].spacing(20).into();
             return container(content).height(Length::Fill).center_y().center_x().into();
+        }
+    }
+}
+
+mod style {
+    use iced::widget::container;
+    use iced::{BorderRadius, Color, Theme};
+
+    pub fn white_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 2.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn red_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn orange_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(255.0 / 255.0, 165.0 / 255.0, 0.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn yellow_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(255.0 / 255.0, 255.0 / 255.0, 51.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn green_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(34.0 / 255.0, 139.0 / 255.0, 34.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn blue_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(0.0 / 255.0, 0.0 / 255.0, 255.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn indigo_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(73.0 / 255.0, 0.0 / 255.0, 130.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn violet_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(218.0 / 255.0, 112.0 / 255.0, 238.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
+        }
+    }
+    pub fn black_container(theme: &Theme) -> container::Appearance {
+        let palette = theme.extended_palette();
+
+        container::Appearance {
+            text_color: Some(palette.background.strong.text),
+            background: Some(Color::from_rgb(0.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0).into()),
+            border_radius: BorderRadius::from(15.0),
+            border_width: 3.0,
+            border_color: Color::BLACK,
+            ..Default::default()
         }
     }
 }
