@@ -366,7 +366,7 @@ impl Application for ScreenshotGrabber {
             }
             Message::ModifyImage(screenshot_bounds, event) => {
                 match self.draw {
-                    FreeHand => {
+                    FreeHand if self.crop!=CropMode::CropConfirm => {
                         let color = Rgba([50u8, 255u8, 0u8, 200u8]);
                         let screen = self.screen_result.clone().unwrap();
                         match event {
@@ -385,7 +385,7 @@ impl Application for ScreenshotGrabber {
                             _ => {}
                         };
                     }
-                    Draw::Circle => {
+                    Draw::Circle if self.crop!=CropMode::CropConfirm => {
                         let color = Rgba([255, 0, 0, 0]);
                         let screen = self.screen_result.clone().unwrap();
                         match event {
@@ -409,7 +409,7 @@ impl Application for ScreenshotGrabber {
                             _ => {}
                         };
                     }
-                    Draw::Text =>{
+                    Draw::Text if self.crop!=CropMode::CropConfirm => {
                         let color = Rgba([255, 0, 0, 0]);
                         let screen = self.screen_result.clone().unwrap();
                         match event {
@@ -425,7 +425,7 @@ impl Application for ScreenshotGrabber {
                             _ => {}
                         };
                     }
-                    Draw::Arrow => {
+                    Draw::Arrow if self.crop!=CropMode::CropConfirm => {
                         let color = Rgba([255, 0, 0, 0]);
                         let screen = self.screen_result.clone().unwrap();
                         match event {
@@ -459,9 +459,9 @@ impl Application for ScreenshotGrabber {
                             _ => {}
                         };
                     }
-                    Draw::Crop => {
-                        let screen = self.screen_result.clone().unwrap();
-                        let color = Rgba([0u8, 0u8, 0u8, 255u8]);
+                    Draw::Crop  => {
+                        let mut screen = self.screen_result.clone().unwrap();
+                        let color = Rgba([255u8, 0u8, 0u8, 255u8]);
                         let mut rect = Rect::at(1, 1).of_size(1, 1);
                         match event{
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
@@ -480,6 +480,7 @@ impl Application for ScreenshotGrabber {
                                 self.draw_mouse_pressed = false;
                                 self.crop = CropMode::CropConfirm;
                                 //println!("x1:{} y1:{} x2:{} y3:{}",self.crop_start.0,self.crop_start.1,self.crop_end.0,self.crop_end.1);
+                                //screen = self.screen_result_backup.clone().unwrap();//Ogni volta che si ritaglia parte dallo screen senza modifiche
                                 rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size((self.crop_end.0.clone()-self.crop_start.0.clone()) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32);
                                 self.screen_result = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
                             }
@@ -491,27 +492,33 @@ impl Application for ScreenshotGrabber {
                 return Command::none();
             }
             Message::DrawFreeButton => {
-                if self.draw == Draw::FreeHand {
-                    self.draw = Draw::Nothing;
-                } else {
-                    self.draw = Draw::FreeHand;
+                if self.crop != CropMode::CropConfirm {
+                    if self.draw == Draw::FreeHand {
+                        self.draw = Draw::Nothing;
+                    } else {
+                        self.draw = Draw::FreeHand;
+                    }
                 }
                 return Command::none();
             }
             Message::DrawCircleButton => {
-                if self.draw == Draw::Circle {
-                    self.draw = Draw::Nothing;
-                } else {
-                    self.draw = Draw::Circle;
+                if self.crop != CropMode::CropConfirm {
+                    if self.draw == Draw::Circle {
+                        self.draw = Draw::Nothing;
+                    } else {
+                        self.draw = Draw::Circle;
+                    }
                 }
                 return Command::none();
             }
             Message::DrawTextButton => {
-                if self.draw == Draw::Text {
-                    self.draw = Draw::Nothing;
-                    self.draw_text_input = "".to_string();
-                } else {
-                    self.draw = Draw::Text;
+                if self.crop != CropMode::CropConfirm {
+                    if self.draw == Draw::Text {
+                        self.draw = Draw::Nothing;
+                        self.draw_text_input = "".to_string();
+                    } else {
+                        self.draw = Draw::Text;
+                    }
                 }
                 return Command::none();
             }
@@ -521,13 +528,18 @@ impl Application for ScreenshotGrabber {
             }
             Message::DrawClearButton => {
                 self.screen_result = self.screen_result_backup.clone();
+                self.crop = CropMode::Crop;
+                self.crop_start = (0,0);
+                self.crop_end = (0,0);
                 return Command::none();
             }
             Message::DrawArrowButton => {
-                if self.draw == Draw::Arrow {
-                    self.draw = Draw::Nothing;
-                } else {
-                    self.draw = Draw::Arrow;
+                if self.crop != CropMode::CropConfirm {
+                    if self.draw == Draw::Arrow {
+                        self.draw = Draw::Nothing;
+                    } else {
+                        self.draw = Draw::Arrow;
+                    }
                 }
                 return Command::none();
             }
