@@ -65,6 +65,8 @@ struct ScreenshotGrabber {
     crop: CropMode,
     crop_start: (i32,i32),
     crop_end: (i32, i32),
+    width: u32,
+    height: u32,
     draw: Draw,
     draw_mouse_pressed: bool,
     draw_figure_press: (i32, i32),
@@ -200,6 +202,8 @@ impl Application for ScreenshotGrabber {
             crop: Crop,
             crop_start: (0, 0),
             crop_end: (0, 0),
+            width: 0,
+            height: 0,
             draw: Nothing,
             draw_mouse_pressed: false,
             draw_figure_press: (0, 0),
@@ -492,8 +496,32 @@ impl Application for ScreenshotGrabber {
                                 self.draw_mouse_pressed = false;
                                 self.crop = CropMode::CropConfirm;
                                 //println!("x1:{} y1:{} x2:{} y3:{}",self.crop_start.0,self.crop_start.1,self.crop_end.0,self.crop_end.1);
-                                //screen = self.screen_result_backup.clone().unwrap();//Ogni volta che si ritaglia parte dallo screen senza modifiche
-                                rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size((self.crop_end.0.clone()-self.crop_start.0.clone()) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32);
+
+                                //Da in alto a sinistra a destra
+                                if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
+                                    self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
+                                    self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
+                                    rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                }
+                                //Da in alto a destra a sinistra
+                                if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
+                                    self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
+                                    self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
+                                    rect = Rect::at(self.crop_end.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                }
+                                //Da in basso a destra a sinistra
+                                if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
+                                    self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
+                                    self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
+                                    rect = Rect::at(self.crop_end.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                }
+                                //Da in basso a sinistra a destra
+                                if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
+                                    self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
+                                    self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
+                                    rect = Rect::at(self.crop_start.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                }
+
                                 self.screen_result = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
                             }
                             _ => {}
@@ -560,8 +588,28 @@ impl Application for ScreenshotGrabber {
                     self.draw = Draw::Nothing;
                 }
                 else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
-                    let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.crop_end.0.clone()-self.crop_start.0.clone()-2) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()-2) as u32);
-                    self.screen_result = Some(cropped.to_image());
+
+                    //Da in alto a sinistra a destra
+                    if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
+                        let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
+                        self.screen_result = Some(cropped.to_image());
+                    }
+                    //Da in alto a destra a sinistra
+                    if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
+                        let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view((self.crop_end.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
+                        self.screen_result = Some(cropped.to_image());
+                    }
+                    //Da in basso a destra a sinistra
+                    if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
+                        let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view((self.crop_end.0.clone()+1) as u32, (self.crop_end.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
+                        self.screen_result = Some(cropped.to_image());
+                    }
+                    //Da in basso a sinistra a destra
+                    if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
+                        let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_end.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
+                        self.screen_result = Some(cropped.to_image());
+                    }
+
                     self.crop = CropMode::Crop;
                     self.draw = Draw::Nothing;
                     self.crop_start = (0,0);
