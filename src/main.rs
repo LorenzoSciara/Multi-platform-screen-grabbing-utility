@@ -365,6 +365,18 @@ impl Application for ScreenshotGrabber {
                 return Command::none();
             }
             Message::ModifyImage(screenshot_bounds, event) => {
+                let mut color = Rgba([0u8, 0u8, 0u8, 255u8]);
+                match self.draw_color_slider_value.clone() {
+                    0..=9 => {color = Rgba([0u8, 0u8, 0u8, 255u8]);}
+                    10..=19 => {color = Rgba([255u8, 0u8, 0u8, 255u8]);}
+                    20..=29 => {color = Rgba([255u8, 165u8, 0u8, 255u8]);}
+                    30..=39 => {color = Rgba([255u8, 255u8, 51u8, 255u8]);}
+                    40..=49 => {color = Rgba([34u8, 139u8, 34u8, 255u8]);}
+                    50..=59 => {color = Rgba([0u8, 0u8, 255u8, 255u8]);}
+                    60..=69 => {color = Rgba([73u8, 0u8, 130u8, 255u8]);}
+                    70..=79 => {color = Rgba([218u8, 112u8, 238u8, 255u8]);}
+                    _ => {color = Rgba([255u8, 255u8, 255u8, 255u8]);}
+                }
                 match self.draw {
                     FreeHand if self.crop!=CropMode::CropConfirm => {
                         let color = Rgba([50u8, 255u8, 0u8, 200u8]);
@@ -373,7 +385,7 @@ impl Application for ScreenshotGrabber {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() {
                                     let position = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 3.2) as i32);
-                                    self.screen_result = Some(imageproc::drawing::draw_filled_circle(&screen, position, 5, color));
+                                    self.screen_result = Some(imageproc::drawing::draw_filled_circle(&screen, position, 5, color.clone()));
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -402,7 +414,7 @@ impl Application for ScreenshotGrabber {
                             }
                             Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
                                 self.draw_mouse_pressed = false;
-                                self.screen_result = Some(imageproc::drawing::draw_hollow_circle(&screen, self.draw_figure_press.clone(), (((self.draw_figure_released.0.clone() - self.draw_figure_press.0.clone()).pow(2) + (self.draw_figure_released.1.clone() - self.draw_figure_press.1.clone()).pow(2)) as f64).sqrt() as i32, color));
+                                self.screen_result = Some(imageproc::drawing::draw_hollow_circle(&screen, self.draw_figure_press.clone(), (((self.draw_figure_released.0.clone() - self.draw_figure_press.0.clone()).pow(2) + (self.draw_figure_released.1.clone() - self.draw_figure_press.1.clone()).pow(2)) as f64).sqrt() as i32, color.clone()));
                                 self.draw_figure_press = (0, 0);
                                 self.draw_figure_released = (0, 0);
                             }
@@ -415,11 +427,11 @@ impl Application for ScreenshotGrabber {
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) {
-                                    self.draw_figure_press = (position.clone().x as i32, position.clone().y as i32);
+                                    self.draw_figure_press = ((position.clone().x - screenshot_bounds.clone().unwrap().x) as i32, (position.clone().y - screenshot_bounds.clone().unwrap().y) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
-                                self.screen_result = Some(imageproc::drawing::draw_text(&screen, color, (self.draw_figure_press.0.clone() as f32 *1.75) as i32, (self.draw_figure_press.1.clone() as f32 *1.35) as i32, Scale{x: 24.8, y: 24.8},  &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
+                                self.screen_result = Some(imageproc::drawing::draw_text(&screen, color.clone(), (self.draw_figure_press.0.clone() as f32 * 3.2) as i32, (self.draw_figure_press.1.clone() as f32 * 3.2) as i32, Scale{x: 24.8, y: 24.8},  &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
                                 self.draw_figure_press = (0, 0);
                             }
                             _ => {}
@@ -444,9 +456,9 @@ impl Application for ScreenshotGrabber {
                                 self.draw_mouse_pressed = false;
                                 let slope = (self.draw_figure_released.clone().1 - self.draw_figure_press.clone().1)as f32 / (self.draw_figure_released.clone().0 - self.draw_figure_press.clone().0) as f32;
                                 //if self.draw_figure_press.clone().0 <= self.draw_figure_released.clone().0 {
-                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color);
-                                    let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color);
-                                    self.screen_result = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color));
+                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                    let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                    self.screen_result = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone()));
                                 //}
                                 /*else if self.draw_figure_press.clone().0 > self.draw_figure_released.clone().0 {
                                     let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 + 30) as f32, (self.draw_figure_released.clone().1 + 30)  as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color);
@@ -548,7 +560,7 @@ impl Application for ScreenshotGrabber {
                     self.draw = Draw::Nothing;
                 }
                 else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
-                    let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view(self.crop_start.0.clone() as u32, self.crop_start.1.clone() as u32, (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32);
+                    let cropped: SubImage<&RgbaImage> = self.screen_result.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.crop_end.0.clone()-self.crop_start.0.clone()-2) as u32, (self.crop_end.1.clone()-self.crop_start.1.clone()-2) as u32);
                     self.screen_result = Some(cropped.to_image());
                     self.crop = CropMode::Crop;
                     self.draw = Draw::Nothing;
