@@ -380,7 +380,6 @@ impl Application for ScreenshotGrabber {
                 }
                 match self.draw {
                     FreeHand if self.crop != CropMode::CropConfirm => {
-                        let color = Rgba([50u8, 255u8, 0u8, 200u8]);
                         let screen = self.image_to_modify.clone().unwrap();
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
@@ -399,7 +398,6 @@ impl Application for ScreenshotGrabber {
                         };
                     }
                     Draw::Circle if self.crop != CropMode::CropConfirm => {
-                        let color = Rgba([255, 0, 0, 0]);
                         let screen = self.image_to_modify.clone().unwrap();
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
@@ -423,7 +421,6 @@ impl Application for ScreenshotGrabber {
                         };
                     }
                     Draw::Text if self.crop != CropMode::CropConfirm => {
-                        let color = Rgba([255, 0, 0, 0]);
                         let screen = self.image_to_modify.clone().unwrap();
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
@@ -439,7 +436,6 @@ impl Application for ScreenshotGrabber {
                         };
                     }
                     Draw::Arrow if self.crop != CropMode::CropConfirm => {
-                        let color = Rgba([255, 0, 0, 0]);
                         let screen = self.image_to_modify.clone().unwrap();
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
