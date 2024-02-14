@@ -241,7 +241,7 @@ impl Application for ScreenshotGrabber {
             }
             Message::SaveButton => {
                 if !self.screen_result.is_empty() {
-                    if let Some(img) = self.screen_result[self.screen_selected].clone() {
+                    if let Some(img) = self.screen_result[self.screen_selected.clone()].clone() {
                         let current_time_string = generate_current_time_string();
                         let path = std::env::current_dir().unwrap();
                         let imghndl: ImageHandler = img.clone().into();
@@ -264,7 +264,7 @@ impl Application for ScreenshotGrabber {
             }
             Message::ChangeSelectedScreen(value) => {
                 self.screen_selected = value;
-                self.image_to_modify = self.screen_result[value].clone();
+                self.image_to_modify = self.screen_result[value.clone()].clone();
                 return Command::none();
             }
             Message::ScreenDone(images) => {
@@ -356,7 +356,7 @@ impl Application for ScreenshotGrabber {
                     }
                 }
                 if !self.screen_result.is_empty() {
-                    if self.screen_result[self.screen_selected].is_some() && event == Event::Window(window::Event::Focused) {
+                    if self.screen_result[self.screen_selected.clone()].is_some() && event == Event::Window(window::Event::Focused) {
                         return window::resize(Size::new(1000, 500));
                     }
                 }
@@ -519,7 +519,7 @@ impl Application for ScreenshotGrabber {
                             } else { self.draw = Draw::Text; }
                         }
                         Draw::ClearButton => {
-                            self.image_to_modify = self.screen_result[self.screen_selected].clone();
+                            self.image_to_modify = self.screen_result[self.screen_selected.clone()].clone();
                             self.crop = CropMode::CropStatus;
                             self.crop_start = (0, 0);
                             self.crop_end = (0, 0);
@@ -559,7 +559,7 @@ impl Application for ScreenshotGrabber {
             match self.page_state {
                 PagesState::Home => home(self.screen_result.clone(), self.screen_selected.clone(), self.toggler_value_autosave.clone()),
                 PagesState::Settings => settings(self.toggler_value_autosave.clone(), self.toggler_value_clipboard.clone(), self.radio_value_monitor, self.radio_value_format, self.timer_value.clone(), self.shortcut_value.clone(), self.path_value.clone(), self.total_monitor_number.clone(), self.shortcut_listen.clone()),
-                PagesState::Modify => modify(self.image_to_modify.clone(), self.draw.clone(), self.draw_text_input.clone(), self.screen_result[self.screen_selected].clone(), self.draw_color_slider_value.clone(), self.crop.clone()),
+                PagesState::Modify => modify(self.image_to_modify.clone(), self.draw.clone(), self.draw_text_input.clone(), self.screen_result[self.screen_selected.clone()].clone(), self.draw_color_slider_value.clone(), self.crop.clone()),
             })
             .width(Length::Fill)
             .padding(25)
