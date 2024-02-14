@@ -10,7 +10,7 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, s
 
     let crop_btn = button(text(if crop == CropMode::CropStatus { "Crop" } else { "Confirm" }).width(Length::Fill).size(20))
         .style(if (draw == Draw::Crop && crop == CropMode::CropStatus) || (draw == Draw::Crop && crop == CropMode::CropConfirm) { theme::Button::Primary } else { theme::Button::Secondary })
-        .on_press(Message::CropButton);
+        .on_press(Message::UpdateDraw(Draw::Crop));
 
     let free_draw_btn = button(text("Line").width(Length::Fill).size(20))
         .style(if draw == Draw::FreeHand { theme::Button::Positive } else { theme::Button::Secondary })
