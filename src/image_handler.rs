@@ -11,30 +11,31 @@ use image::ImageFormat::{Jpeg, Png, Gif};
 
 #[derive(Clone)]
 pub struct ImageHandler {
-    pub buffer: Vec<u8>,
-    width: u32,
-    height: u32,
-    color_type: ColorType,
+    pub buffer : Vec<u8>,
+    width : u32,
+    height : u32,
+    color_type : ColorType
 }
 
 impl From<RgbaImage> for ImageHandler {
     fn from(value: RgbaImage) -> Self {
-        Self {
+        Self{
             buffer: value.clone().into_raw(),
             width: value.width(),
             height: value.height(),
-            color_type: Rgba8,
+            color_type : Rgba8
         }
     }
 }
 
 impl ImageHandler {
-    fn encode(handler: ImageHandler, path: String, format: ImageFormat) -> ImageResult<()> {
+
+    fn encode(handler : ImageHandler, path : String, format : ImageFormat) -> ImageResult<()> {
         let p = Path::new(&path);
         match format {
             Png => {
                 println!("PNG encoding");
-                let result = image::save_buffer_with_format(p, &handler.buffer, handler.width, handler.height, handler.color_type, Png);
+                let result = image::save_buffer_with_format(p,&handler.buffer,handler.width,handler.height,handler.color_type,Png);
                 println!("PNG encoding end.");
                 notifica::notify("PNG encoding end.", format!("PNG encoding end. File available: {}", path.as_str()).as_str())
                     .expect("OS API error.");
@@ -55,7 +56,7 @@ impl ImageHandler {
                 println!("GIF encoding");
                 let w = File::create(p)?;
                 let w_buffer = BufWriter::with_capacity(handler.buffer.len(), w);
-                let mut encoder = image::codecs::gif::GifEncoder::new_with_speed(w_buffer, 10);
+                let mut encoder = image::codecs::gif::GifEncoder::new_with_speed(w_buffer,10);
                 let result = encoder.encode(&handler.buffer, handler.width, handler.height, handler.color_type);
                 println!("GIF encoding end.");
                 notifica::notify("GIF encoding end.", format!("GIF encoding end. File available: {}", path.as_str()).as_str())
@@ -79,11 +80,12 @@ impl ImageHandler {
             height: self.height as usize,
             bytes: (&self.buffer).into(),
         })
+
     }
 
     pub fn save_image(&self, path: PathBuf) {
-        let format: ImageFormat;
-        match path.clone().extension() {
+        let format : ImageFormat;
+        match path.clone().extension(){
             Some(ext) => {
                 match ext.to_str().unwrap() {
                     "png" => format = ImageFormat::Png,
@@ -101,6 +103,6 @@ impl ImageHandler {
                 return;
             }
         }
-        let _ = Self::encode(self.clone(), path.to_string_lossy().to_string(), format);
+        let _ = Self::encode(self.clone(),path.to_string_lossy().to_string(),format);
     }
 }

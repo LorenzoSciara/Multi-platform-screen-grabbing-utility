@@ -12,21 +12,9 @@ pub fn home(screen_result: Vec<Option<RgbaImage>>, screen_selected: usize, toggl
     let settings_btn = button(text("Settings").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::SettingsButton);
     let modify_btn = button(text("Modify").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::ModifyButton);
     let save_btn = button(text("Save").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::SaveButton);
-    let left_btn = button(text("←")
-        .width(Length::Fixed(30.0))
-        .height(Length::Fixed(30.0))
-        .size(30)
-        .horizontal_alignment(alignment::Horizontal::Center)
-        .vertical_alignment(alignment::Vertical::Center))
-        .style(theme::Button::Primary)
+    let left_btn = button(text("←").width(Length::Fixed(30.0)).height(Length::Fixed(30.0)).size(30).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center)).style(theme::Button::Primary)
         .on_press(if screen_selected > 0 { Message::ChangeSelectedScreen(screen_selected - 1) } else { Message::ChangeSelectedScreen(0) });
-    let right_btn = button(text("→")
-        .width(Length::Fixed(30.0))
-        .height(Length::Fixed(30.0))
-        .size(30)
-        .horizontal_alignment(alignment::Horizontal::Center)
-        .vertical_alignment(alignment::Vertical::Center))
-        .style(theme::Button::Primary)
+    let right_btn = button(text("→").width(Length::Fixed(30.0)).height(Length::Fixed(30.0)).size(30).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center)).style(theme::Button::Primary)
         .on_press(if screen_selected + 1 < screen_result.len() { Message::ChangeSelectedScreen(screen_selected + 1) } else { Message::ChangeSelectedScreen(screen_selected) });
 
     let screenshot = if screen_result.is_empty() { None } else { screen_result[screen_selected].clone() };
@@ -49,13 +37,16 @@ pub fn home(screen_result: Vec<Option<RgbaImage>>, screen_selected: usize, toggl
                 screen.height(),
                 screen.as_raw().clone(),
             ));
+
+            let image_container = container(image).height(Length::Fill).width(Length::Fill).center_y().center_x();
+
             if screen_result.len() == 1 {
-                image_row = row![image]
+                image_row = row![image_container]
                     .spacing(20)
                     .align_items(Alignment::Center)
                     .into();
             } else {
-                image_row = row![left_btn, image, right_btn]
+                image_row = row![left_btn, image_container, right_btn]
                     .spacing(20)
                     .align_items(Alignment::Center)
                     .into();
@@ -73,5 +64,5 @@ pub fn home(screen_result: Vec<Option<RgbaImage>>, screen_selected: usize, toggl
         .spacing(20)
         .into();
 
-    return container(content).height(Length::Fill).center_y().center_x().into();
+    return container(content).height(Length::Fill).width(Length::Fill).into();
 }
