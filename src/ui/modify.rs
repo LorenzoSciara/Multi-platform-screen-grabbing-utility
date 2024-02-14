@@ -1,11 +1,8 @@
-use std::any::Any;
 use crate::{Message, CropMode, Draw};
-use iced::theme::TextInput;
-use iced::{Element, Alignment, Length, theme, Event, Color, Theme, Background};
-use iced::widget::{button, row, text, column, text_input, Row, container, vertical_slider, Container};
-use image::{RgbaImage, Rgba};
+use iced::{Element, Alignment, Length, theme};
+use iced::widget::{button, row, text, column, text_input, container, vertical_slider, Container};
+use image::{RgbaImage};
 use iced::widget::image as img;
-use imageproc;
 use crate::SCREENSHOT_CONTAINER;
 
 pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, screen_result_backup: Option<RgbaImage>, color_slider_value: u8, crop: CropMode) -> Element<'static, Message> {
@@ -40,7 +37,7 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, s
     let save_changes_btn = button(text("Save Changes").width(Length::Fill).size(20)).style(theme::Button::Positive)
         .on_press(Message::UpdateDraw(Draw::SaveModifyChanges));
 
-    let mut control_row: Element<'static, Message> = row![].into();
+    let control_row: Element<'static, Message>;
 
     if draw == Draw::Text && screen_result == screen_result_backup {
         control_row = row![home_btn, crop_btn, free_draw_btn, circle_draw_btn, arrow_draw_btn, text_draw_btn, text_draw_text].spacing(20).into();
@@ -54,7 +51,7 @@ pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, s
         control_row = row![home_btn, crop_btn, free_draw_btn, circle_draw_btn, arrow_draw_btn, text_draw_btn].spacing(20).into();
     }
 
-    let mut image_row: Element<'static, Message> = row![].into();
+    let image_row: Element<'static, Message>;
 
     match screen_result {
         Some(screen) => {

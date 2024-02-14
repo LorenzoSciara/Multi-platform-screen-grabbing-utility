@@ -7,27 +7,21 @@ mod ui {
 use crate::ui::home::home;
 use crate::ui::modify::modify;
 use crate::ui::settings::settings;
-use iced::{executor, mouse, Point};
+use iced::{executor, mouse};
 use iced::widget::{container};
 use iced::window;
-use iced::event;
 use iced::{Application, Command, Subscription, Element, Length, Settings, Theme, Size, Event, Rectangle};
-use std::{io, thread, time};
+use std::{thread};
 use std::mem::replace;
-use std::alloc::System;
 use tokio::sync::mpsc;
 use std::cell::RefCell;
 use std::time::{Duration};
-use chrono::{Datelike, prelude::*};
-use iced::advanced::svg::Data::Path;
-use iced::window::{screenshot, UserAttention};
+use iced::window::{UserAttention};
 use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, generate_current_time_string};
 use multi_platform_screen_grabbing_utility::choice::Choice;
-use screenshots::{Screen};
 use rfd::FileDialog;
-use env_logger;
 use once_cell::sync::Lazy;
 use image::Rgba;
 use image::{GenericImageView, RgbaImage, SubImage};
@@ -65,7 +59,7 @@ struct ScreenshotGrabber {
     screen_selected: usize,
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
-    event: Event,
+    //event: Event,
     crop: CropMode,
     crop_start: (i32, i32),
     crop_end: (i32, i32),
@@ -165,7 +159,7 @@ impl Application for ScreenshotGrabber {
             screen_selected: 0,
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
-            event: Event::Window(window::Event::Focused),
+            //event: Event::Window(window::Event::Focused),
             crop: CropStatus,
             crop_start: (0, 0),
             crop_end: (0, 0),
@@ -184,14 +178,14 @@ impl Application for ScreenshotGrabber {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        match message {
+        return match message {
             Message::NewScreenshotButton => {
                 let sender = self.sender.clone();
                 let timer_value = self.timer_value.clone();
                 let radio_value_monitor = self.radio_value_monitor.to_numeric().clone();
                 self.subscription_state = SubscriptionState::Screenshotting;
                 thread::spawn(move || {
-                    thread::sleep(time::Duration::from_millis((timer_value * 1000 + 500) as u64));
+                    thread::sleep(Duration::from_millis((timer_value * 1000 + 500) as u64));
                     let mut screen_results = Vec::new();
                     if radio_value_monitor != 6 {
                         match Screenshot::capture_screen(radio_value_monitor - 1) {
@@ -220,23 +214,23 @@ impl Application for ScreenshotGrabber {
                     }
                     sender.take().as_mut().unwrap().send(screen_results).unwrap();
                 });
-                return window::minimize(true);
+                window::minimize(true)
             }
             Message::SettingsButton => {
                 self.page_state = PagesState::Settings;
-                return window::resize(Size::new(1000, 500));
+                window::resize(Size::new(1000, 500))
             }
             Message::ModifyButton => {
                 self.page_state = PagesState::Modify;
-                return window::maximize(true);
+                window::maximize(true)
             }
             Message::HomeButton => {
                 self.page_state = PagesState::Home;
-                self.draw = Draw::Nothing;
+                self.draw = Nothing;
                 if self.screen_result.is_empty() {
-                    return window::resize(Size::new(350, 120));
+                    window::resize(Size::new(350, 120))
                 } else {
-                    return window::resize(Size::new(1000, 500));
+                    window::resize(Size::new(1000, 500))
                 }
             }
             Message::SaveButton => {
@@ -245,7 +239,7 @@ impl Application for ScreenshotGrabber {
                         let current_time_string = generate_current_time_string();
                         let path = std::env::current_dir().unwrap();
                         let imghndl: ImageHandler = img.clone().into();
-                        let res = rfd::FileDialog::new()
+                        let res = FileDialog::new()
                             .set_file_name(current_time_string)
                             .set_directory(&path)
                             .add_filter("png", &["png"])
@@ -260,12 +254,12 @@ impl Application for ScreenshotGrabber {
                         }
                     }
                 }
-                return Command::none();
+                Command::none()
             }
             Message::ChangeSelectedScreen(value) => {
                 self.screen_selected = value;
                 self.image_to_modify = self.screen_result[value.clone()].clone();
-                return Command::none();
+                Command::none()
             }
             Message::ScreenDone(images) => {
                 self.screen_result = images.clone();
@@ -308,44 +302,43 @@ impl Application for ScreenshotGrabber {
                         }
                     }
                 }
-                return window::request_user_attention(Some(UserAttention::Informational));
+                window::request_user_attention(Some(UserAttention::Informational))
             }
             Message::TogglerToggledAutosave(value) => {
                 self.toggler_value_autosave = value;
-                return Command::none();
+                Command::none()
             }
             Message::TogglerToggledClipboard(value) => {
                 self.toggler_value_clipboard = value;
-                return Command::none();
+                Command::none()
             }
             Message::RadioSelectedMonitor(value) => {
                 self.radio_value_monitor = value;
-                return Command::none();
+                Command::none()
             }
             Message::RadioSelectedFormat(value) => {
                 self.radio_value_format = value;
-                return Command::none();
+                Command::none()
             }
             Message::TimerChange(value) => {
                 self.timer_value = value;
-                return Command::none();
+                Command::none()
             }
             Message::ShortcutListen(value) => {
                 self.shortcut_listen = value;
-                return Command::none();
+                Command::none()
             }
             Message::InputPath => {
-                let res = rfd::FileDialog::new().pick_folder();
+                let res = FileDialog::new().pick_folder();
                 match res {
                     Some(path) => {
                         self.path_value = format!("{}\\", path.display());
                     }
                     None => ()
                 }
-                return Command::none();
+                Command::none()
             }
             Message::EventOccurred(event) => {
-                //println!("{event:?}");
                 if check_shortcut_event(&event) == self.shortcut_value {
                     return Command::perform(async { Message::NewScreenshotButton }, |msg| msg);
                 }
@@ -363,10 +356,10 @@ impl Application for ScreenshotGrabber {
                 if self.page_state == PagesState::Modify {
                     return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds| { Message::ModifyImage(bounds, Some(event.clone())) });
                 }
-                return Command::none();
+                Command::none()
             }
             Message::ModifyImage(screenshot_bounds, event) => {
-                let mut color = Rgba([0u8, 0u8, 0u8, 255u8]);
+                let color;
                 match self.draw_color_slider_value.clone() {
                     0..=9 => { color = Rgba([0u8, 0u8, 0u8, 255u8]); }
                     10..=19 => { color = Rgba([255u8, 0u8, 0u8, 255u8]); }
@@ -378,13 +371,14 @@ impl Application for ScreenshotGrabber {
                     70..=79 => { color = Rgba([218u8, 112u8, 238u8, 255u8]); }
                     _ => { color = Rgba([255u8, 255u8, 255u8, 255u8]); }
                 }
+                let window_size = 2.0;
                 match self.draw {
                     FreeHand if self.crop != CropMode::CropConfirm => {
                         let screen = self.image_to_modify.clone().unwrap();
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() {
-                                    let position = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 3.2) as i32);
+                                    let position = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone()) as i32);
                                     self.image_to_modify = Some(imageproc::drawing::draw_filled_circle(&screen, position, 5, color.clone()));
                                 }
                             }
@@ -402,10 +396,10 @@ impl Application for ScreenshotGrabber {
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press == (0, 0) {
-                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * 3.2) as i32);
+                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * window_size.clone()) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press != (0, 0) {
-                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * 3.2) as i32);
+                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * window_size.clone()) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -429,7 +423,7 @@ impl Application for ScreenshotGrabber {
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
-                                self.image_to_modify = Some(imageproc::drawing::draw_text(&screen, color.clone(), (self.draw_figure_press.0.clone() as f32 * 3.2) as i32, (self.draw_figure_press.1.clone() as f32 * 3.2) as i32, Scale { x: 24.8, y: 24.8 }, &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
+                                self.image_to_modify = Some(imageproc::drawing::draw_text(&screen, color.clone(), (self.draw_figure_press.0.clone() as f32 * window_size.clone()) as i32, (self.draw_figure_press.1.clone() as f32 * window_size.clone()) as i32, Scale { x: 24.8, y: 24.8 }, &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
                                 self.draw_figure_press = (0, 0);
                             }
                             _ => {}
@@ -440,10 +434,10 @@ impl Application for ScreenshotGrabber {
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press == (0, 0) {
-                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * 3.2) as i32);
+                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * window_size.clone()) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press != (0, 0) {
-                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * 3.2) as i32);
+                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * window_size.clone()) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -452,16 +446,16 @@ impl Application for ScreenshotGrabber {
                             Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
                                 self.draw_mouse_pressed = false;
                                 let slope = (self.draw_figure_released.clone().1 - self.draw_figure_press.clone().1) as f32 / (self.draw_figure_released.clone().0 - self.draw_figure_press.clone().0) as f32;
-                                //if self.draw_figure_press.clone().0 <= self.draw_figure_released.clone().0 {
-                                let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
-                                let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
-                                self.image_to_modify = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone()));
-                                //}
-                                /*else if self.draw_figure_press.clone().0 > self.draw_figure_released.clone().0 {
-                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 + 30) as f32, (self.draw_figure_released.clone().1 + 30)  as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color);
-                                    let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 + 30) as f32, (self.draw_figure_released.clone().1 - 30) as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color);
-                                    self.image_to_modify = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color));
-                                }*/
+                                if self.draw_figure_press.1 > self.draw_figure_released.1{
+                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 + (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                    let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 + (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                    self.image_to_modify = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone()));
+                                }
+                                else{
+                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 - ( 30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                    let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                    self.image_to_modify = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone()));
+                                }
                                 self.draw_figure_press = (0, 0);
                                 self.draw_figure_released = (0, 0);
                             }
@@ -469,17 +463,17 @@ impl Application for ScreenshotGrabber {
                         };
                     }
                     Draw::Crop => {
-                        let mut screen = self.image_to_modify.clone().unwrap();
+                        let screen = self.image_to_modify.clone().unwrap();
                         let color = Rgba([255u8, 0u8, 0u8, 255u8]);
-                        let mut rect = Rect::at(1, 1).of_size(1, 1);
+                        let rect;
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 //println!("{} {}",position.x,position.y);
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start == (0, 0) {
-                                    self.crop_start = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 3.2) as i32);
+                                    self.crop_start = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone()) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start != (0, 0) {
-                                    self.crop_end = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 3.2) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 3.2) as i32);
+                                    self.crop_end = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone()) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -498,25 +492,25 @@ impl Application for ScreenshotGrabber {
                     }
                     _ => {}
                 }
-                return Command::none();
+                Command::none()
             }
             Message::UpdateDraw(value) => {
                 if self.crop != CropMode::CropConfirm {
                     match value {
-                        Draw::Arrow => { if self.draw == Draw::Arrow { self.draw = Draw::Nothing; } else { self.draw = Draw::Arrow; } }
-                        Draw::FreeHand => { if self.draw == Draw::FreeHand { self.draw = Draw::Nothing; } else { self.draw = Draw::FreeHand; } }
-                        Draw::Circle => { if self.draw == Draw::Circle { self.draw = Draw::Nothing; } else { self.draw = Draw::Circle; } }
+                        Draw::Arrow => { if self.draw == Draw::Arrow { self.draw = Nothing; } else { self.draw = Draw::Arrow; } }
+                        FreeHand => { if self.draw == FreeHand { self.draw = Nothing; } else { self.draw = FreeHand; } }
+                        Draw::Circle => { if self.draw == Draw::Circle { self.draw = Nothing; } else { self.draw = Draw::Circle; } }
                         Draw::TextInput(value) => { self.draw_text_input = value; }
                         Draw::ColorSlider(value) => { self.draw_color_slider_value = value; }
                         Draw::Text => {
                             if self.draw == Draw::Text {
-                                self.draw = Draw::Nothing;
+                                self.draw = Nothing;
                                 self.draw_text_input = "".to_string();
                             } else { self.draw = Draw::Text; }
                         }
                         Draw::ClearButton => {
                             self.image_to_modify = self.screen_result[self.screen_selected.clone()].clone();
-                            self.crop = CropMode::CropStatus;
+                            self.crop = CropStatus;
                             self.crop_start = (0, 0);
                             self.crop_end = (0, 0);
                         }
@@ -530,22 +524,22 @@ impl Application for ScreenshotGrabber {
                         _ => ()
                     }
                 }
-                return Command::none();
+                Command::none()
             }
             Message::CropButton => {
-                if self.draw == Draw::Crop && self.crop == CropMode::CropStatus {
-                    self.draw = Draw::Nothing;
+                if self.draw == Draw::Crop && self.crop == CropStatus {
+                    self.draw = Nothing;
                 } else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
                     let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.crop_end.0.clone() - self.crop_start.0.clone() - 2) as u32, (self.crop_end.1.clone() - self.crop_start.1.clone() - 2) as u32);
                     self.image_to_modify = Some(cropped.to_image());
-                    self.crop = CropMode::CropStatus;
-                    self.draw = Draw::Nothing;
+                    self.crop = CropStatus;
+                    self.draw = Nothing;
                     self.crop_start = (0, 0);
                     self.crop_end = (0, 0);
                 } else {
                     self.draw = Draw::Crop;
                 }
-                return Command::none();
+                Command::none()
             }
         }
     }
@@ -565,9 +559,9 @@ impl Application for ScreenshotGrabber {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        match self.subscription_state {
+        return match self.subscription_state {
             SubscriptionState::Screenshotting => {
-                return iced::subscription::unfold(
+                iced::subscription::unfold(
                     "channel",
                     self.receiver.take(),
                     move |mut receiver| async move {
@@ -584,10 +578,10 @@ impl Application for ScreenshotGrabber {
                         }
                         return (Message::ScreenDone(images), receiver);
                     },
-                );
+                )
             }
             SubscriptionState::None => {
-                return iced::subscription::events().map(Message::EventOccurred);
+                iced::subscription::events().map(Message::EventOccurred)
             }
         }
     }

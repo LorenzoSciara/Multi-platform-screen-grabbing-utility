@@ -5,7 +5,7 @@ use iced::widget::image as img;
 use image::RgbaImage;
 
 pub fn home(screen_result: Vec<Option<RgbaImage>>, screen_selected: usize, toggler_value_autosave: bool) -> Element<'static, Message> {
-    let mut control_row: Element<'static, Message> = row![].into();
+    let control_row: Element<'static, Message>;
     let mut image_row: Element<'static, Message> = row![].into();
 
     let screen_btn = button(text("New Screenshot").width(Length::Fill).size(20)).style(theme::Button::Primary).on_press(Message::NewScreenshotButton);
