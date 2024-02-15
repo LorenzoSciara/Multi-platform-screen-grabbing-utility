@@ -21,7 +21,6 @@ use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, generate_current_time_string};
 use multi_platform_screen_grabbing_utility::choice::Choice;
 use multi_platform_screen_grabbing_utility::enums::{Setting, PagesState, CropMode, SubscriptionState, Draw};
-use multi_platform_screen_grabbing_utility::modify_image::modify_image;
 use rfd::FileDialog;
 use once_cell::sync::Lazy;
 use image::Rgba;
