@@ -164,8 +164,8 @@ impl Application for ScreenshotGrabber {
             crop: CropStatus,
             crop_start: (0, 0),
             crop_end: (0, 0),
-            width: 0,
-            height: 0,
+            width: 1,
+            height: 1,
             draw: Nothing,
             draw_mouse_pressed: false,
             draw_figure_press: (0, 0),
@@ -490,30 +490,41 @@ impl Application for ScreenshotGrabber {
                                     if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
                                         self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
                                         self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
-                                        rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                        if self.width > 0 && self.height > 0 {
+                                            rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                        }
                                     }
                                     //Da in alto a destra a sinistra
                                     if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
                                         self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
                                         self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
-                                        rect = Rect::at(self.crop_end.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                        if self.width > 0 && self.height > 0 {
+                                            rect = Rect::at(self.crop_end.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
+                                        }
                                     }
                                     //Da in basso a destra a sinistra
                                     if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
                                         self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
                                         self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
-                                        rect = Rect::at(self.crop_end.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                        if self.width > 0 && self.height > 0 {
+                                            rect = Rect::at(self.crop_end.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                        }
                                     }
                                     //Da in basso a sinistra a destra
                                     if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
                                         self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
                                         self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
-                                        rect = Rect::at(self.crop_start.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                        if self.width > 0 && self.height > 0 {
+                                            rect = Rect::at(self.crop_start.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
+                                        }
                                     }
-
-                                    self.image_to_modify = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
+                                    if self.width > 0 && self.height > 0 {
+                                        self.image_to_modify = Some(imageproc::drawing::draw_hollow_rect(&screen, rect, color));
+                                    }
                                 }
-                                self.crop = CropMode::CropConfirm;
+                                if self.width > 0 && self.height > 0 {
+                                    self.crop = CropMode::CropConfirm;
+                                }
                             }
                             _ => {}
                         };
