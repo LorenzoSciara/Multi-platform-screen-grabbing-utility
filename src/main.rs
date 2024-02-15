@@ -354,8 +354,6 @@ impl Application for ScreenshotGrabber {
                 Command::none()
             }
             Message::ModifyImage(screenshot_bounds, event) => {
-                modify_image(self.crop, self.crop_start, self.crop_end, self.width, self.height, &self.draw, self.draw_mouse_pressed, self.draw_figure_press, self.draw_figure_released, &self.draw_text_input, self.draw_color_slider_value, &self.image_to_modify, screenshot_bounds, event);
-                /*
                 let color;
                 match self.draw_color_slider_value.clone() {
                     0..=9 => { color = Rgba([0u8, 0u8, 0u8, 255u8]); }
@@ -524,7 +522,6 @@ impl Application for ScreenshotGrabber {
                     }
                     _ => {}
                 }
-                */
                 return Command::none();
             }
             Message::EventOccurred(event) => {
