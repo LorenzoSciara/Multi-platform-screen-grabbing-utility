@@ -24,7 +24,7 @@ use multi_platform_screen_grabbing_utility::choice::Choice;
 use rfd::FileDialog;
 use once_cell::sync::Lazy;
 use image::Rgba;
-use image::{GenericImageView, RgbaImage, SubImage};
+use image::{GenericImageView, RgbaImage, SubImage, imageops};
 use crate::CropMode::CropStatus;
 use rusttype::{Font, Scale};
 use crate::Draw::{FreeHand, Nothing};
@@ -543,22 +543,30 @@ impl Application for ScreenshotGrabber {
                                 //Da in alto a sinistra a destra
                                 if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
                                     let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    self.image_to_modify = Some(cropped.to_image());
+                                    let cropped_image = cropped.to_image();
+                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                    self.image_to_modify = Some(resized_image);
                                 }
                                 //Da in alto a destra a sinistra
                                 if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
                                     let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    self.image_to_modify = Some(cropped.to_image());
+                                    let cropped_image = cropped.to_image();
+                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                    self.image_to_modify = Some(resized_image);
                                 }
                                 //Da in basso a destra a sinistra
                                 if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
                                     let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone()+1) as u32, (self.crop_end.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    self.image_to_modify = Some(cropped.to_image());
+                                    let cropped_image = cropped.to_image();
+                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                    self.image_to_modify = Some(resized_image);
                                 }
                                 //Da in basso a sinistra a destra
                                 if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
                                     let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_end.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    self.image_to_modify = Some(cropped.to_image());
+                                    let cropped_image = cropped.to_image();
+                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                    self.image_to_modify = Some(resized_image);
                                 }
                                 self.crop = CropMode::CropStatus;
                                 self.draw = Draw::Nothing;
