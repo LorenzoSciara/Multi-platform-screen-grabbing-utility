@@ -1,6 +1,5 @@
 use arboard::{Clipboard, ImageData};
 use std::path::PathBuf;
-use log::error;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -93,13 +92,13 @@ impl ImageHandler {
                     "jpeg" => format = ImageFormat::Jpeg,
                     "gif" => format = ImageFormat::Gif,
                     _ => {
-                        error!("Format not supported.");
+                        println!("Format not supported.");
                         return;
                     }
                 }
             }
             None => {
-                error!("Format not supported.");
+                println!("Format not supported.");
                 return;
             }
         }
