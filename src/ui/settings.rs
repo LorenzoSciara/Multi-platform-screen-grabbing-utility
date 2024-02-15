@@ -1,6 +1,6 @@
 use iced::{Element, Length, alignment, theme};
 use iced::widget::{button, row, text, column, container, Row};
-use crate::{Message, Choice};
+use crate::{Message, Choice, Setting};
 use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container};
 
 fn shortcut_input(shortcut_value: String, shortcut_listen: bool) -> Container<'static, Message> {
@@ -18,7 +18,7 @@ fn shortcut_input(shortcut_value: String, shortcut_listen: bool) -> Container<'s
             .width(160)
             .padding([0, 0, 0, 20]);
     }
-    let select_button = button("Change shortcut").on_press(Message::ShortcutListen(true));
+    let select_button = button("Change shortcut").on_press(Message::UpdateSetting(Setting::Shortcut(true)));
     let setting_input = row![text_box, select_button ].spacing(20);
     let container = Container::new(setting_input);
     return container;
@@ -32,7 +32,7 @@ fn path_input(path_value: String) -> Container<'static, Message> {
         .height(30)
         .width(350)
         .padding([5, 10]);
-    let select_button = button("Change path").on_press(Message::InputPath);
+    let select_button = button("Change path").on_press(Message::UpdateSetting(Setting::Path));
     let setting_input = row![text_box, select_button ].spacing(20);
     let container = Container::new(setting_input);
     return container;
@@ -40,10 +40,10 @@ fn path_input(path_value: String) -> Container<'static, Message> {
 
 fn timer_container(timer_value: i32) -> Container<'static, Message> {
     let increment_button = button(text("+").width(Length::Fixed(25.0)).height(Length::Fixed(25.0)).size(25).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
-        .on_press(if timer_value < 10 { Message::TimerChange(timer_value + 1) } else { Message::TimerChange(timer_value) });
+        .on_press(if timer_value < 10 { Message::UpdateSetting(Setting::Timer(timer_value.clone() + 1 )) } else { Message::UpdateSetting(Setting::Timer(timer_value.clone())) });
     let timer_text = Container::new(text(timer_value.clone()).size(20)).padding([5, 20, 0, 20]);
     let decrement_button = button(text("-").width(Length::Fixed(25.0)).height(Length::Fixed(25.0)).size(25).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center))
-        .on_press(if timer_value > 0 { Message::TimerChange(timer_value.clone() - 1) } else { Message::TimerChange(timer_value.clone()) });
+        .on_press(if timer_value > 0 { Message::UpdateSetting(Setting::Timer(timer_value.clone() - 1 )) } else { Message::UpdateSetting(Setting::Timer(timer_value.clone())) });
     let setting_input = row![decrement_button, timer_text, increment_button];
     let container = Container::new(setting_input);
     return container;
@@ -51,11 +51,11 @@ fn timer_container(timer_value: i32) -> Container<'static, Message> {
 
 fn radio_container_format(radio_value: Choice) -> Container<'static, Message> {
     let selected_choice = Some(radio_value);
-    let a = Radio::new(".jpg", Choice::A, selected_choice, Message::RadioSelectedFormat);
+    let a = Radio::new(".jpg", Choice::A, selected_choice, |b|Message::UpdateSetting(Setting::Format(b)));
     let container_a = Container::new(a).padding([0, 10]);
-    let b = Radio::new(".png", Choice::B, selected_choice, Message::RadioSelectedFormat);
+    let b = Radio::new(".png", Choice::B, selected_choice, |b|Message::UpdateSetting(Setting::Format(b)));
     let container_b = Container::new(b).padding([0, 10]);
-    let c = Radio::new(".gif", Choice::C, selected_choice, Message::RadioSelectedFormat);
+    let c = Radio::new(".gif", Choice::C, selected_choice, |b|Message::UpdateSetting(Setting::Format(b)));
     let container_c = Container::new(c).padding([0, 10]);
     let setting_input = row![container_a, container_b, container_c];
     let container = Container::new(setting_input);
@@ -76,9 +76,9 @@ fn radio_container_monitor(radio_value: Choice, total_monitor_number: usize) -> 
             5 => Choice::E,
             _ => Choice::A,
         };
-        radio_row = radio_row.push(Radio::new(&label, value, selected_choice, Message::RadioSelectedMonitor));
+        radio_row = radio_row.push(Radio::new(&label, value, selected_choice, |b|Message::UpdateSetting(Setting::Monitor(b))));
     }
-    radio_row = radio_row.push(Radio::new("All", Choice::F, selected_choice, Message::RadioSelectedMonitor));
+    radio_row = radio_row.push(Radio::new("All", Choice::F, selected_choice, |b|Message::UpdateSetting(Setting::Monitor(b))));
     let container = Container::new(radio_row);
     return container;
 }
@@ -87,7 +87,7 @@ fn toggler_container(toggler_value: bool, toggler_type: String) -> Container<'st
     let setting_input = toggler(
         String::from(""),
         toggler_value,
-        move |b| { if toggler_type == "autosave" { Message::TogglerToggledAutosave(b) } else { Message::TogglerToggledClipboard(b) } },
+        move |b| { if toggler_type == "autosave" { Message::UpdateSetting(Setting::Autosave(b)) } else { Message::UpdateSetting(Setting::Clipboard(b)) } },
     )
         .width(Length::Shrink)
         .spacing(10);

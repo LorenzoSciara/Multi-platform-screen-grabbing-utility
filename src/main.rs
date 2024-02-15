@@ -96,7 +96,6 @@ pub enum Draw {
     Circle,
     Text,
     Arrow,
-    Rectangle,
     Nothing,
     Crop,
     TextInput(String),
@@ -105,9 +104,18 @@ pub enum Draw {
     ColorSlider(u8),
 }
 
-#[derive(
-Debug, Clone, Copy, PartialEq, Eq
-)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Setting {
+    Monitor(Choice),
+    Format(Choice),
+    Autosave(bool),
+    Clipboard(bool),
+    Shortcut(bool),
+    Path,
+    Timer(i32),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CropMode {
     CropStatus,
     CropConfirm,
@@ -121,17 +129,11 @@ pub enum Message {
     HomeButton,
     SaveButton,
     ScreenDone(Vec<Option<RgbaImage>>),
-    TogglerToggledAutosave(bool),
-    TogglerToggledClipboard(bool),
-    RadioSelectedMonitor(Choice),
-    RadioSelectedFormat(Choice),
-    TimerChange(i32),
-    ShortcutListen(bool),
-    InputPath,
     EventOccurred(Event),
     ChangeSelectedScreen(usize),
     ModifyImage(Option<Rectangle>, Option<Event>),
     UpdateDraw(Draw),
+    UpdateSetting(Setting),
 }
 
 static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
@@ -307,39 +309,25 @@ impl Application for ScreenshotGrabber {
                 }
                 window::request_user_attention(Some(UserAttention::Informational))
             }
-            Message::TogglerToggledAutosave(value) => {
-                self.toggler_value_autosave = value;
-                Command::none()
-            }
-            Message::TogglerToggledClipboard(value) => {
-                self.toggler_value_clipboard = value;
-                Command::none()
-            }
-            Message::RadioSelectedMonitor(value) => {
-                self.radio_value_monitor = value;
-                Command::none()
-            }
-            Message::RadioSelectedFormat(value) => {
-                self.radio_value_format = value;
-                Command::none()
-            }
-            Message::TimerChange(value) => {
-                self.timer_value = value;
-                Command::none()
-            }
-            Message::ShortcutListen(value) => {
-                self.shortcut_listen = value;
-                Command::none()
-            }
-            Message::InputPath => {
-                let res = FileDialog::new().pick_folder();
-                match res {
-                    Some(path) => {
-                        self.path_value = format!("{}\\", path.display());
+            Message::UpdateSetting(value) => {
+                match value {
+                    Setting::Monitor(value) => { self.radio_value_monitor = value; }
+                    Setting::Format(value) => { self.radio_value_format = value; }
+                    Setting::Autosave(value) => { self.toggler_value_autosave = value; }
+                    Setting::Clipboard(value) => { self.toggler_value_clipboard = value; }
+                    Setting::Shortcut(value) => { self.shortcut_listen = value; }
+                    Setting::Timer(value) => { self.timer_value = value; }
+                    Setting::Path => {
+                        let res = FileDialog::new().pick_folder();
+                        match res {
+                            Some(path) => {
+                                self.path_value = format!("{}\\", path.display());
+                            }
+                            None => ()
+                        }
                     }
-                    None => ()
                 }
-                Command::none()
+                return Command::none();
             }
             Message::EventOccurred(event) => {
                 if check_shortcut_event(&event) == self.shortcut_value {
@@ -449,13 +437,12 @@ impl Application for ScreenshotGrabber {
                             Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
                                 self.draw_mouse_pressed = false;
                                 let slope = (self.draw_figure_released.clone().1 - self.draw_figure_press.clone().1) as f32 / (self.draw_figure_released.clone().0 - self.draw_figure_press.clone().0) as f32;
-                                if self.draw_figure_press.1 > self.draw_figure_released.1{
+                                if self.draw_figure_press.1 > self.draw_figure_released.1 {
                                     let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 + (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
                                     let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 + (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
                                     self.image_to_modify = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone()));
-                                }
-                                else{
-                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 - ( 30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
+                                } else {
+                                    let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
                                     let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 - (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
                                     self.image_to_modify = Some(imageproc::drawing::draw_line_segment(&image_tmp2, (self.draw_figure_press.clone().0 as f32, self.draw_figure_press.clone().1 as f32), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone()));
                                 }
@@ -465,18 +452,18 @@ impl Application for ScreenshotGrabber {
                             _ => {}
                         };
                     }
-                    Draw::Crop  => {
+                    Draw::Crop => {
                         let screen = self.image_to_modify.clone().unwrap();
                         let color = Rgba([255u8, 0u8, 0u8, 255u8]);
                         let mut rect = Rect::at(1, 1).of_size(1, 1);
-                        match event{
+                        match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 //println!("{} {}",position.x,position.y);
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start == (0, 0) {
-                                    self.crop_start = (((position.x.clone()-screenshot_bounds.unwrap().x.clone())*1.575) as i32, ((position.y.clone()-screenshot_bounds.unwrap().y.clone())*1.575) as i32);
+                                    self.crop_start = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 1.575) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 1.575) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start != (0, 0) {
-                                    self.crop_end = (((position.x.clone()-screenshot_bounds.unwrap().x.clone())*1.575) as i32, ((position.y.clone()-screenshot_bounds.unwrap().y.clone())*1.575) as i32);
+                                    self.crop_end = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 1.575) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 1.575) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -487,33 +474,33 @@ impl Application for ScreenshotGrabber {
                                 //println!("x1:{} y1:{} x2:{} y3:{}",self.crop_start.0,self.crop_start.1,self.crop_end.0,self.crop_end.1);
                                 if self.crop != CropMode::CropConfirm {
                                     //Da in alto a sinistra a destra
-                                    if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
-                                        self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
-                                        self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
+                                    if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
+                                        self.width = (self.crop_end.0.clone() - self.crop_start.0.clone()) as u32;
+                                        self.height = (self.crop_end.1.clone() - self.crop_start.1.clone()) as u32;
                                         if self.width > 0 && self.height > 0 {
                                             rect = Rect::at(self.crop_start.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
                                         }
                                     }
                                     //Da in alto a destra a sinistra
-                                    if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
-                                        self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
-                                        self.height = (self.crop_end.1.clone()-self.crop_start.1.clone()) as u32;
+                                    if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
+                                        self.width = (self.crop_start.0.clone() - self.crop_end.0.clone()) as u32;
+                                        self.height = (self.crop_end.1.clone() - self.crop_start.1.clone()) as u32;
                                         if self.width > 0 && self.height > 0 {
                                             rect = Rect::at(self.crop_end.0.clone(), self.crop_start.1.clone()).of_size(self.width, self.height);
                                         }
                                     }
                                     //Da in basso a destra a sinistra
-                                    if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
-                                        self.width = (self.crop_start.0.clone()-self.crop_end.0.clone()) as u32;
-                                        self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
+                                    if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
+                                        self.width = (self.crop_start.0.clone() - self.crop_end.0.clone()) as u32;
+                                        self.height = (self.crop_start.1.clone() - self.crop_end.1.clone()) as u32;
                                         if self.width > 0 && self.height > 0 {
                                             rect = Rect::at(self.crop_end.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
                                         }
                                     }
                                     //Da in basso a sinistra a destra
-                                    if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
-                                        self.width = (self.crop_end.0.clone()-self.crop_start.0.clone()) as u32;
-                                        self.height = (self.crop_start.1.clone()-self.crop_end.1.clone()) as u32;
+                                    if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
+                                        self.width = (self.crop_end.0.clone() - self.crop_start.0.clone()) as u32;
+                                        self.height = (self.crop_start.1.clone() - self.crop_end.1.clone()) as u32;
                                         if self.width > 0 && self.height > 0 {
                                             rect = Rect::at(self.crop_start.0.clone(), self.crop_end.1.clone()).of_size(self.width, self.height);
                                         }
@@ -534,78 +521,76 @@ impl Application for ScreenshotGrabber {
                 Command::none()
             }
             Message::UpdateDraw(value) => {
-                    match value {
-                        Draw::Crop => {
-                            if self.draw == Draw::Crop && self.crop == CropMode::CropStatus {
-                                self.draw = Draw::Nothing;
+                match value {
+                    Draw::Crop => {
+                        if self.draw == Draw::Crop && self.crop == CropMode::CropStatus {
+                            self.draw = Draw::Nothing;
+                        } else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
+                            //Da in alto a sinistra a destra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
                             }
-                            else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
-                                //Da in alto a sinistra a destra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
-                                    let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    let cropped_image = cropped.to_image();
-                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                    self.image_to_modify = Some(resized_image);
-                                }
-                                //Da in alto a destra a sinistra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() > 0 {
-                                    let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone()+1) as u32, (self.crop_start.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    let cropped_image = cropped.to_image();
-                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                    self.image_to_modify = Some(resized_image);
-                                }
-                                //Da in basso a destra a sinistra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() <= 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
-                                    let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone()+1) as u32, (self.crop_end.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    let cropped_image = cropped.to_image();
-                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                    self.image_to_modify = Some(resized_image);
-                                }
-                                //Da in basso a sinistra a destra
-                                if self.crop_end.0.clone()-self.crop_start.0.clone() > 0 && self.crop_end.1.clone()-self.crop_start.1.clone() <= 0 {
-                                    let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone()+1) as u32, (self.crop_end.1.clone()+1) as u32, (self.width.clone()-2) as u32, (self.height.clone()-2) as u32);
-                                    let cropped_image = cropped.to_image();
-                                    let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                    self.image_to_modify = Some(resized_image);
-                                }
-                                self.crop = CropMode::CropStatus;
-                                self.draw = Draw::Nothing;
-                                self.crop_start = (0,0);
-                                self.crop_end = (0,0);
+                            //Da in alto a destra a sinistra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
                             }
-                            else {
-                                self.draw = Draw::Crop;
+                            //Da in basso a destra a sinistra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone() + 1) as u32, (self.crop_end.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
                             }
-                        }
-                        Draw::Arrow if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Arrow { self.draw = Nothing; } else { self.draw = Draw::Arrow; } }
-                        FreeHand if self.crop != CropMode::CropConfirm => { if self.draw == FreeHand { self.draw = Nothing; } else { self.draw = FreeHand; } }
-                        Draw::Circle if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Circle { self.draw = Nothing; } else { self.draw = Draw::Circle; } }
-                        Draw::TextInput(value) => { self.draw_text_input = value; }
-                        Draw::ColorSlider(value) => { self.draw_color_slider_value = value; }
-                        Draw::Text if self.crop != CropMode::CropConfirm => {
-                            if self.draw == Draw::Text {
-                                self.draw = Nothing;
-                                self.draw_text_input = "".to_string();
-                            } else { self.draw = Draw::Text; }
-                        }
-                        Draw::ClearButton => {
-                            self.image_to_modify = self.screen_result[self.screen_selected.clone()].clone();
-                            self.crop = CropStatus;
+                            //Da in basso a sinistra a destra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_end.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
+                            }
+                            self.crop = CropMode::CropStatus;
+                            self.draw = Draw::Nothing;
                             self.crop_start = (0, 0);
                             self.crop_end = (0, 0);
+                        } else {
+                            self.draw = Draw::Crop;
                         }
-                        Draw::SaveModifyChanges if self.crop != CropMode::CropConfirm => {
-                            for (index, elem) in self.screen_result.iter_mut().enumerate() {
-                                if index == self.screen_selected {
-                                    let _ = replace(elem, self.image_to_modify.clone());
-                                }
+                    }
+                    Draw::Arrow if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Arrow { self.draw = Nothing; } else { self.draw = Draw::Arrow; } }
+                    Draw::FreeHand if self.crop != CropMode::CropConfirm => { if self.draw == FreeHand { self.draw = Nothing; } else { self.draw = FreeHand; } }
+                    Draw::Circle if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Circle { self.draw = Nothing; } else { self.draw = Draw::Circle; } }
+                    Draw::TextInput(value) => { self.draw_text_input = value; }
+                    Draw::ColorSlider(value) => { self.draw_color_slider_value = value; }
+                    Draw::Text if self.crop != CropMode::CropConfirm => {
+                        if self.draw == Draw::Text {
+                            self.draw = Nothing;
+                            self.draw_text_input = "".to_string();
+                        } else { self.draw = Draw::Text; }
+                    }
+                    Draw::ClearButton => {
+                        self.image_to_modify = self.screen_result[self.screen_selected.clone()].clone();
+                        self.crop = CropStatus;
+                        self.crop_start = (0, 0);
+                        self.crop_end = (0, 0);
+                    }
+                    Draw::SaveModifyChanges if self.crop != CropMode::CropConfirm => {
+                        for (index, elem) in self.screen_result.iter_mut().enumerate() {
+                            if index == self.screen_selected {
+                                let _ = replace(elem, self.image_to_modify.clone());
                             }
                         }
-                        _ => ()
                     }
+                    _ => ()
+                }
                 Command::none()
             }
-        }
+        };
     }
 
     fn view(&self) -> Element<Message> {
@@ -647,6 +632,6 @@ impl Application for ScreenshotGrabber {
             SubscriptionState::None => {
                 iced::subscription::events().map(Message::EventOccurred)
             }
-        }
+        };
     }
 }
