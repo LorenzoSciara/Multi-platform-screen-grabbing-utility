@@ -5,20 +5,20 @@ use image::Rgba;
 use imageproc::rect::Rect;
 use image::{RgbaImage, SubImage, imageops};
 use rusttype::{Font, Scale};
-pub fn modify_image(mut crop: CropMode,
-                mut crop_start: (i32, i32),
-                mut crop_end: (i32, i32),
-                mut width: u32,
-                mut height: u32,
-                mut draw: &Draw,
-                mut draw_mouse_pressed: bool,
-                mut draw_figure_press: (i32, i32),
-                mut draw_figure_released: (i32, i32),
-                mut draw_text_input: &String,
-                mut draw_color_slider_value: u8,
-                mut image_to_modify: &Option<RgbaImage>,
-                screenshot_bounds: Option<Rectangle>,
-                event: Option<Event>) {
+pub fn modify_image(crop: CropMode,
+                    crop_start: (i32, i32),
+                    crop_end: (i32, i32),
+                    width: u32,
+                    height: u32,
+                    draw: Draw,
+                    draw_mouse_pressed: bool,
+                    draw_figure_press: (i32, i32),
+                    draw_figure_released: (i32, i32),
+                    draw_text_input: &str,
+                    draw_color_slider_value: u32,
+                    image_to_modify: &mut Option<DynamicImage>,
+                    screenshot_bounds: Option<Rect>,
+                    event: Option<Event>) {
     let color;
     match draw_color_slider_value.clone() {
         0..=9 => { color = Rgba([0u8, 0u8, 0u8, 255u8]); }
