@@ -1,4 +1,4 @@
-use crate::{Message, CropMode, Draw};
+use crate::{Message, CropMode, Draw, PagesState};
 use iced::{Element, Alignment, Length, theme};
 use iced::widget::{button, row, text, column, text_input, container, vertical_slider, Container};
 use image::{RgbaImage};
@@ -6,7 +6,7 @@ use iced::widget::image as img;
 use crate::SCREENSHOT_CONTAINER;
 
 pub fn modify(screen_result: Option<RgbaImage>, draw: Draw, draw_text: String, screen_result_backup: Option<RgbaImage>, color_slider_value: u8, crop: CropMode) -> Element<'static, Message> {
-    let home_btn = button(text("← Home").width(Length::Fill).size(20)).style(theme::Button::Destructive).on_press(Message::HomeButton);
+    let home_btn = button(text("← Home").width(Length::Fill).size(20)).style(theme::Button::Destructive).on_press(Message::UpdatePage(PagesState::Home));
 
     let crop_btn = button(text(if crop == CropMode::CropStatus { "Crop" } else { "Confirm" }).width(Length::Fill).size(20))
         .style(if (draw == Draw::Crop && crop == CropMode::CropStatus) || (draw == Draw::Crop && crop == CropMode::CropConfirm) { theme::Button::Primary } else { theme::Button::Secondary })

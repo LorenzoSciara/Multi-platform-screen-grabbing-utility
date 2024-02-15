@@ -1,9 +1,8 @@
-mod ui {
+pub mod ui {
     pub mod home;
     pub mod modify;
     pub mod settings;
 }
-
 use crate::ui::home::home;
 use crate::ui::modify::modify;
 use crate::ui::settings::settings;
@@ -21,6 +20,8 @@ use multi_platform_screen_grabbing_utility::screenshot::Screenshot;
 use multi_platform_screen_grabbing_utility::image_handler::ImageHandler;
 use multi_platform_screen_grabbing_utility::hotkeys::{check_shortcut_event, generate_current_time_string};
 use multi_platform_screen_grabbing_utility::choice::Choice;
+use multi_platform_screen_grabbing_utility::enums::{Setting, PagesState, CropMode, SubscriptionState, Draw};
+use multi_platform_screen_grabbing_utility::modify_image::modify_image;
 use rfd::FileDialog;
 use once_cell::sync::Lazy;
 use image::Rgba;
@@ -42,6 +43,21 @@ pub fn main() -> iced::Result {
     return ScreenshotGrabber::run(settings);
 }
 
+#[derive(Debug, Clone)]
+pub enum Message {
+    NewScreenshotButton,
+    ScreenDone(Vec<Option<RgbaImage>>),
+    ChangeSelectedScreen(usize),
+    SaveButton,
+    EventOccurred(Event),
+    ModifyImage(Option<Rectangle>, Option<Event>),
+    UpdateDraw(Draw),
+    UpdateSetting(Setting),
+    UpdatePage(PagesState)
+}
+
+static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
+
 #[derive()]
 struct ScreenshotGrabber {
     page_state: PagesState,
@@ -59,7 +75,6 @@ struct ScreenshotGrabber {
     screen_selected: usize,
     subscription_state: SubscriptionState,
     total_monitor_number: usize,
-    //event: Event,
     crop: CropMode,
     crop_start: (i32, i32),
     crop_end: (i32, i32),
@@ -73,70 +88,6 @@ struct ScreenshotGrabber {
     draw_color_slider_value: u8,
     image_to_modify: Option<RgbaImage>,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PagesState {
-    Home,
-    Settings,
-    Modify,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SubscriptionState {
-    Screenshotting,
-    None,
-}
-
-
-#[derive(
-Debug, Clone, PartialEq, Eq
-)]
-pub enum Draw {
-    FreeHand,
-    Circle,
-    Text,
-    Arrow,
-    Nothing,
-    Crop,
-    TextInput(String),
-    SaveModifyChanges,
-    ClearButton,
-    ColorSlider(u8),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Setting {
-    Monitor(Choice),
-    Format(Choice),
-    Autosave(bool),
-    Clipboard(bool),
-    Shortcut(bool),
-    Path,
-    Timer(i32),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CropMode {
-    CropStatus,
-    CropConfirm,
-}
-
-#[derive(Debug, Clone)]
-pub enum Message {
-    SettingsButton,
-    NewScreenshotButton,
-    ModifyButton,
-    HomeButton,
-    SaveButton,
-    ScreenDone(Vec<Option<RgbaImage>>),
-    EventOccurred(Event),
-    ChangeSelectedScreen(usize),
-    ModifyImage(Option<Rectangle>, Option<Event>),
-    UpdateDraw(Draw),
-    UpdateSetting(Setting),
-}
-
-static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
 
 impl Application for ScreenshotGrabber {
     type Executor = executor::Default;
@@ -162,7 +113,6 @@ impl Application for ScreenshotGrabber {
             screen_selected: 0,
             subscription_state: SubscriptionState::None,
             total_monitor_number: Screenshot::monitors_num(),
-            //event: Event::Window(window::Event::Focused),
             crop: CropStatus,
             crop_start: (0, 0),
             crop_end: (0, 0),
@@ -179,11 +129,32 @@ impl Application for ScreenshotGrabber {
     }
 
     fn title(&self) -> String {
-        String::from("Exit - Iced")
+        String::from("Iced Screen Grabber utility")
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
         return match message {
+            Message::UpdatePage(value) => {
+                match value {
+                    PagesState::Settings => {
+                        self.page_state = PagesState::Settings;
+                        return window::resize(Size::new(1000, 500));
+                    }
+                    PagesState::Home => {
+                        self.page_state = PagesState::Home;
+                        self.draw = Nothing;
+                        if self.screen_result.is_empty() {
+                            return window::resize(Size::new(350, 120));
+                        } else {
+                            return window::resize(Size::new(1000, 500));
+                        }
+                    }
+                    PagesState::Modify => {
+                        self.page_state = PagesState::Modify;
+                        return window::maximize(true);
+                    }
+                }
+            }
             Message::NewScreenshotButton => {
                 let sender = self.sender.clone();
                 let timer_value = self.timer_value.clone();
@@ -220,23 +191,6 @@ impl Application for ScreenshotGrabber {
                     sender.take().as_mut().unwrap().send(screen_results).unwrap();
                 });
                 window::minimize(true)
-            }
-            Message::SettingsButton => {
-                self.page_state = PagesState::Settings;
-                window::resize(Size::new(1000, 500))
-            }
-            Message::ModifyButton => {
-                self.page_state = PagesState::Modify;
-                window::maximize(true)
-            }
-            Message::HomeButton => {
-                self.page_state = PagesState::Home;
-                self.draw = Nothing;
-                if self.screen_result.is_empty() {
-                    window::resize(Size::new(350, 120))
-                } else {
-                    window::resize(Size::new(1000, 500))
-                }
             }
             Message::SaveButton => {
                 if !self.screen_result.is_empty() {
@@ -329,27 +283,79 @@ impl Application for ScreenshotGrabber {
                 }
                 return Command::none();
             }
-            Message::EventOccurred(event) => {
-                if check_shortcut_event(&event) == self.shortcut_value {
-                    return Command::perform(async { Message::NewScreenshotButton }, |msg| msg);
-                }
-                if self.shortcut_listen {
-                    if check_shortcut_event(&event) != "".to_string() {
-                        self.shortcut_value = check_shortcut_event(&event);
-                        self.shortcut_listen = false;
+            Message::UpdateDraw(value) => {
+                match value {
+                    Draw::Crop => {
+                        if self.draw == Draw::Crop && self.crop == CropMode::CropStatus {
+                            self.draw = Draw::Nothing;
+                        } else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
+                            //Da in alto a sinistra a destra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
+                            }
+                            //Da in alto a destra a sinistra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
+                            }
+                            //Da in basso a destra a sinistra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone() + 1) as u32, (self.crop_end.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
+                            }
+                            //Da in basso a sinistra a destra
+                            if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
+                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_end.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
+                                let cropped_image = cropped.to_image();
+                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
+                                self.image_to_modify = Some(resized_image);
+                            }
+                            self.crop = CropMode::CropStatus;
+                            self.draw = Draw::Nothing;
+                            self.crop_start = (0, 0);
+                            self.crop_end = (0, 0);
+                        } else {
+                            self.draw = Draw::Crop;
+                        }
                     }
-                }
-                if !self.screen_result.is_empty() {
-                    if self.screen_result[self.screen_selected.clone()].is_some() && event == Event::Window(window::Event::Focused) {
-                        return window::resize(Size::new(1000, 500));
+                    Draw::Arrow if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Arrow { self.draw = Nothing; } else { self.draw = Draw::Arrow; } }
+                    Draw::FreeHand if self.crop != CropMode::CropConfirm => { if self.draw == FreeHand { self.draw = Nothing; } else { self.draw = FreeHand; } }
+                    Draw::Circle if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Circle { self.draw = Nothing; } else { self.draw = Draw::Circle; } }
+                    Draw::TextInput(value) => { self.draw_text_input = value; }
+                    Draw::ColorSlider(value) => { self.draw_color_slider_value = value; }
+                    Draw::Text if self.crop != CropMode::CropConfirm => {
+                        if self.draw == Draw::Text {
+                            self.draw = Nothing;
+                            self.draw_text_input = "".to_string();
+                        } else { self.draw = Draw::Text; }
                     }
-                }
-                if self.page_state == PagesState::Modify {
-                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds| { Message::ModifyImage(bounds, Some(event.clone())) });
+                    Draw::ClearButton => {
+                        self.image_to_modify = self.screen_result[self.screen_selected.clone()].clone();
+                        self.crop = CropStatus;
+                        self.crop_start = (0, 0);
+                        self.crop_end = (0, 0);
+                    }
+                    Draw::SaveModifyChanges if self.crop != CropMode::CropConfirm => {
+                        for (index, elem) in self.screen_result.iter_mut().enumerate() {
+                            if index == self.screen_selected {
+                                let _ = replace(elem, self.image_to_modify.clone());
+                            }
+                        }
+                    }
+                    _ => ()
                 }
                 Command::none()
             }
             Message::ModifyImage(screenshot_bounds, event) => {
+                modify_image(self.crop, self.crop_start, self.crop_end, self.width, self.height, &self.draw, self.draw_mouse_pressed, self.draw_figure_press, self.draw_figure_released, &self.draw_text_input, self.draw_color_slider_value, &self.image_to_modify, screenshot_bounds, event);
+                /*
                 let color;
                 match self.draw_color_slider_value.clone() {
                     0..=9 => { color = Rgba([0u8, 0u8, 0u8, 255u8]); }
@@ -518,75 +524,26 @@ impl Application for ScreenshotGrabber {
                     }
                     _ => {}
                 }
-                Command::none()
+                */
+                return Command::none();
             }
-            Message::UpdateDraw(value) => {
-                match value {
-                    Draw::Crop => {
-                        if self.draw == Draw::Crop && self.crop == CropMode::CropStatus {
-                            self.draw = Draw::Nothing;
-                        } else if self.draw == Draw::Crop && self.crop == CropMode::CropConfirm {
-                            //Da in alto a sinistra a destra
-                            if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
-                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
-                                let cropped_image = cropped.to_image();
-                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                self.image_to_modify = Some(resized_image);
-                            }
-                            //Da in alto a destra a sinistra
-                            if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() > 0 {
-                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone() + 1) as u32, (self.crop_start.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
-                                let cropped_image = cropped.to_image();
-                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                self.image_to_modify = Some(resized_image);
-                            }
-                            //Da in basso a destra a sinistra
-                            if self.crop_end.0.clone() - self.crop_start.0.clone() <= 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
-                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_end.0.clone() + 1) as u32, (self.crop_end.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
-                                let cropped_image = cropped.to_image();
-                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                self.image_to_modify = Some(resized_image);
-                            }
-                            //Da in basso a sinistra a destra
-                            if self.crop_end.0.clone() - self.crop_start.0.clone() > 0 && self.crop_end.1.clone() - self.crop_start.1.clone() <= 0 {
-                                let cropped: SubImage<&RgbaImage> = self.image_to_modify.as_ref().unwrap().view((self.crop_start.0.clone() + 1) as u32, (self.crop_end.1.clone() + 1) as u32, (self.width.clone() - 2) as u32, (self.height.clone() - 2) as u32);
-                                let cropped_image = cropped.to_image();
-                                let resized_image = imageops::resize(&cropped_image, 1920, 1080, image::imageops::FilterType::Lanczos3);
-                                self.image_to_modify = Some(resized_image);
-                            }
-                            self.crop = CropMode::CropStatus;
-                            self.draw = Draw::Nothing;
-                            self.crop_start = (0, 0);
-                            self.crop_end = (0, 0);
-                        } else {
-                            self.draw = Draw::Crop;
-                        }
+            Message::EventOccurred(event) => {
+                if check_shortcut_event(&event) == self.shortcut_value {
+                    return Command::perform(async { Message::NewScreenshotButton }, |msg| msg);
+                }
+                if self.shortcut_listen {
+                    if check_shortcut_event(&event) != "".to_string() {
+                        self.shortcut_value = check_shortcut_event(&event);
+                        self.shortcut_listen = false;
                     }
-                    Draw::Arrow if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Arrow { self.draw = Nothing; } else { self.draw = Draw::Arrow; } }
-                    Draw::FreeHand if self.crop != CropMode::CropConfirm => { if self.draw == FreeHand { self.draw = Nothing; } else { self.draw = FreeHand; } }
-                    Draw::Circle if self.crop != CropMode::CropConfirm => { if self.draw == Draw::Circle { self.draw = Nothing; } else { self.draw = Draw::Circle; } }
-                    Draw::TextInput(value) => { self.draw_text_input = value; }
-                    Draw::ColorSlider(value) => { self.draw_color_slider_value = value; }
-                    Draw::Text if self.crop != CropMode::CropConfirm => {
-                        if self.draw == Draw::Text {
-                            self.draw = Nothing;
-                            self.draw_text_input = "".to_string();
-                        } else { self.draw = Draw::Text; }
+                }
+                if !self.screen_result.is_empty() {
+                    if self.screen_result[self.screen_selected.clone()].is_some() && event == Event::Window(window::Event::Focused) {
+                        return window::resize(Size::new(1000, 500));
                     }
-                    Draw::ClearButton => {
-                        self.image_to_modify = self.screen_result[self.screen_selected.clone()].clone();
-                        self.crop = CropStatus;
-                        self.crop_start = (0, 0);
-                        self.crop_end = (0, 0);
-                    }
-                    Draw::SaveModifyChanges if self.crop != CropMode::CropConfirm => {
-                        for (index, elem) in self.screen_result.iter_mut().enumerate() {
-                            if index == self.screen_selected {
-                                let _ = replace(elem, self.image_to_modify.clone());
-                            }
-                        }
-                    }
-                    _ => ()
+                }
+                if self.page_state == PagesState::Modify {
+                    return container::visible_bounds(SCREENSHOT_CONTAINER.clone()).map(move |bounds| { Message::ModifyImage(bounds, Some(event.clone())) });
                 }
                 Command::none()
             }

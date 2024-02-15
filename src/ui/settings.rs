@@ -1,6 +1,6 @@
 use iced::{Element, Length, alignment, theme};
 use iced::widget::{button, row, text, column, container, Row};
-use crate::{Message, Choice, Setting};
+use crate::{Message, Choice, Setting, PagesState};
 use iced::widget::{horizontal_space, scrollable, toggler, vertical_space, Radio, Container};
 
 fn shortcut_input(shortcut_value: String, shortcut_listen: bool) -> Container<'static, Message> {
@@ -113,7 +113,7 @@ fn settings_box(settings_text: String, settings_container: Container<'static, Me
 
 pub fn settings(toggler_value_autosave: bool, toggler_value_clipboard: bool, radio_value_monitor: Choice, radio_value_format: Choice, timer_value: i32, shortcut_value: String, path_value: String, total_monitor_number: usize, shortcut_listen: bool) -> Element<'static, Message> {
     let undobutton = button(text("← Home").width(Length::Fill).size(20))
-        .on_press(Message::HomeButton)
+        .on_press(Message::UpdatePage(PagesState::Home))
         .style(theme::Button::Destructive)
         .width(Length::Fixed(100.0))
         .height(Length::Fixed(50.0))

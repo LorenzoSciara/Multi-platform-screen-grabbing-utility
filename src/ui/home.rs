@@ -1,6 +1,6 @@
 use iced::{Element, Length, theme, Alignment, alignment};
 use iced::widget::{button, row, text, container, column};
-use crate::{Message};
+use crate::{Message,PagesState};
 use iced::widget::image as img;
 use image::RgbaImage;
 
@@ -9,8 +9,8 @@ pub fn home(screen_result: Vec<Option<RgbaImage>>, screen_selected: usize, toggl
     let mut image_row: Element<'static, Message> = row![].into();
 
     let screen_btn = button(text("New Screenshot").width(Length::Fill).size(20)).style(theme::Button::Primary).on_press(Message::NewScreenshotButton);
-    let settings_btn = button(text("Settings").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::SettingsButton);
-    let modify_btn = button(text("Modify").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::ModifyButton);
+    let settings_btn = button(text("Settings").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::UpdatePage(PagesState::Settings));
+    let modify_btn = button(text("Modify").width(Length::Fill).size(20)).style(theme::Button::Secondary).on_press(Message::UpdatePage(PagesState::Modify));
     let save_btn = button(text("Save").width(Length::Fill).size(20)).style(theme::Button::Positive).on_press(Message::SaveButton);
     let left_btn = button(text("←").width(Length::Fixed(30.0)).height(Length::Fixed(30.0)).size(30).horizontal_alignment(alignment::Horizontal::Center).vertical_alignment(alignment::Vertical::Center)).style(theme::Button::Primary)
         .on_press(if screen_selected > 0 { Message::ChangeSelectedScreen(screen_selected - 1) } else { Message::ChangeSelectedScreen(0) });
