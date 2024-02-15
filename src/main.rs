@@ -3,6 +3,7 @@ pub mod ui {
     pub mod modify;
     pub mod settings;
 }
+
 use crate::ui::home::home;
 use crate::ui::modify::modify;
 use crate::ui::settings::settings;
@@ -52,7 +53,7 @@ pub enum Message {
     ModifyImage(Option<Rectangle>, Option<Event>),
     UpdateDraw(Draw),
     UpdateSetting(Setting),
-    UpdatePage(PagesState)
+    UpdatePage(PagesState),
 }
 
 static SCREENSHOT_CONTAINER: Lazy<container::Id> = Lazy::new(|| container::Id::new("screenshot"));
@@ -365,14 +366,17 @@ impl Application for ScreenshotGrabber {
                     70..=79 => { color = Rgba([218u8, 112u8, 238u8, 255u8]); }
                     _ => { color = Rgba([255u8, 255u8, 255u8, 255u8]); }
                 }
-                let window_size = 2.0;
+                let mut window_size = (0.0, 0.0);
+                if screenshot_bounds.clone().unwrap().width != 0.0 && screenshot_bounds.clone().unwrap().height != 0.0 {
+                    window_size = ((self.image_to_modify.clone().unwrap().width() as f32) / screenshot_bounds.clone().unwrap().width, (self.image_to_modify.clone().unwrap().height() as f32) / screenshot_bounds.clone().unwrap().height);
+                }
                 match self.draw {
                     FreeHand if self.crop != CropMode::CropConfirm => {
                         let screen = self.image_to_modify.clone().unwrap();
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() {
-                                    let position = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone()) as i32);
+                                    let position = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone().1) as i32);
                                     self.image_to_modify = Some(imageproc::drawing::draw_filled_circle(&screen, position, 5, color.clone()));
                                 }
                             }
@@ -390,10 +394,10 @@ impl Application for ScreenshotGrabber {
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press == (0, 0) {
-                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * window_size.clone()) as i32);
+                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * window_size.clone().1) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press != (0, 0) {
-                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * window_size.clone()) as i32);
+                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * window_size.clone().1) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -417,7 +421,7 @@ impl Application for ScreenshotGrabber {
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
-                                self.image_to_modify = Some(imageproc::drawing::draw_text(&screen, color.clone(), (self.draw_figure_press.0.clone() as f32 * window_size.clone()) as i32, (self.draw_figure_press.1.clone() as f32 * window_size.clone()) as i32, Scale { x: 24.8, y: 24.8 }, &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
+                                self.image_to_modify = Some(imageproc::drawing::draw_text(&screen, color.clone(), (self.draw_figure_press.0.clone() as f32 * window_size.clone().0) as i32, (self.draw_figure_press.1.clone() as f32 * window_size.clone().1) as i32, Scale { x: 24.8, y: 24.8 }, &Font::try_from_vec(Vec::from(include_bytes!("DejaVuSans.ttf") as &[u8])).unwrap(), self.draw_text_input.clone().as_str()));
                                 self.draw_figure_press = (0, 0);
                             }
                             _ => {}
@@ -428,10 +432,10 @@ impl Application for ScreenshotGrabber {
                         match event {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press == (0, 0) {
-                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * window_size.clone()) as i32);
+                                    self.draw_figure_press = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y.clone()) * window_size.clone().0) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.draw_figure_press != (0, 0) {
-                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone()) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * window_size.clone()) as i32);
+                                    self.draw_figure_released = (((position.x.clone() - screenshot_bounds.clone().unwrap().x) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.clone().unwrap().y) * window_size.clone().0) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -439,7 +443,8 @@ impl Application for ScreenshotGrabber {
                             }
                             Some(Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))) => {
                                 self.draw_mouse_pressed = false;
-                                let slope = (self.draw_figure_released.clone().1 - self.draw_figure_press.clone().1) as f32 / (self.draw_figure_released.clone().0 - self.draw_figure_press.clone().0) as f32;
+                                let mut slope = (self.draw_figure_released.clone().1 - self.draw_figure_press.clone().1) as f32 / (self.draw_figure_released.clone().0 - self.draw_figure_press.clone().0) as f32;
+                                if slope > 0.0 && slope <= 0.5 { slope = 0.5; } else if slope > 1.0 { slope = 1.0; } else if slope < 0.0 && slope >= -0.5 { slope = -0.5; } else if slope < -1.0 { slope = -1.0; }
                                 if self.draw_figure_press.1 > self.draw_figure_released.1 {
                                     let image_tmp1 = imageproc::drawing::draw_line_segment(&screen, ((self.draw_figure_released.clone().0 as f32 + (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 + (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
                                     let image_tmp2 = imageproc::drawing::draw_line_segment(&image_tmp1, ((self.draw_figure_released.clone().0 as f32 + (30.0 * slope.clone())), (self.draw_figure_released.clone().1 as f32 - (30.0 * slope.clone()))), (self.draw_figure_released.clone().0 as f32, self.draw_figure_released.clone().1 as f32), color.clone());
@@ -463,10 +468,10 @@ impl Application for ScreenshotGrabber {
                             Some(Event::Mouse(mouse::Event::CursorMoved { position })) => {
                                 //println!("{} {}",position.x,position.y);
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start == (0, 0) {
-                                    self.crop_start = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 1.575) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 1.575) as i32);
+                                    self.crop_start = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone().1) as i32);
                                 }
                                 if screenshot_bounds.unwrap().contains(position) && self.draw_mouse_pressed.clone() && self.crop_start != (0, 0) {
-                                    self.crop_end = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * 1.575) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * 1.575) as i32);
+                                    self.crop_end = (((position.x.clone() - screenshot_bounds.unwrap().x.clone()) * window_size.clone().0) as i32, ((position.y.clone() - screenshot_bounds.unwrap().y.clone()) * window_size.clone().1) as i32);
                                 }
                             }
                             Some(Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))) => {
@@ -521,6 +526,7 @@ impl Application for ScreenshotGrabber {
                     }
                     _ => {}
                 }
+
                 return Command::none();
             }
             Message::EventOccurred(event) => {
